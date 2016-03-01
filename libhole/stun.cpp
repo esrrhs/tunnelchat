@@ -656,7 +656,7 @@ stunRand()
    { 
       init = true;
 		
-      UInt64 tick;
+      UInt64 tick = 0;
 		
 #if defined(WIN32) 
       volatile unsigned int lowtick=0,hightick=0;
@@ -669,7 +669,7 @@ stunRand()
       tick = hightick;
       tick <<= 32;
       tick |= lowtick;
-#elif defined(__GNUC__) && ( defined(__i686__) || defined(__i386__) )
+#elif defined(__GNUC__) && ( defined(__i686__) || defined(__i386__) || defined(__x86_64__) )
       asm("rdtsc" : "=A" (tick));
 #elif defined (__SUNPRO_CC) || defined( __sparc__ )	
       tick = gethrtime();
@@ -859,7 +859,7 @@ operator<<( ostream& strm, const StunAddress4& addr)
 
 // returns true if it scucceeded
 bool 
-stunParseHostName( char* peerName,
+stunParseHostName( const char* peerName,
                UInt32& ip,
                UInt16& portVal,
                UInt16 defaultPort )
@@ -960,7 +960,7 @@ stunParseHostName( char* peerName,
 
 
 bool
-stunParseServerName( char* name, StunAddress4& addr)
+stunParseServerName( const char* name, StunAddress4& addr)
 {
    assert(name);
 	

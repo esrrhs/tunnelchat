@@ -37,11 +37,12 @@ PARAM:
 void useage()
 {
 	printf("\
-fakechat \n\n\
-arg : [cmd] [param] \n\
+Fakechat \n\n\
+Arg : [cmd] [param] \n\
 \n\
-new [name]\n\
-	create new user by name\n\
+Cmd List\n\
+	new [name]\n\
+		create new user by name\n\
 ");
 }
 

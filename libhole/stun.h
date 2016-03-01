@@ -262,10 +262,10 @@ stunGetSystemTimeSecs();
 
 /// find the IP address of a the specified stun server - return false is fails parse 
 bool  
-stunParseServerName( char* serverName, StunAddress4& stunServerAddr);
+stunParseServerName( const char* serverName, StunAddress4& stunServerAddr);
 
 bool 
-stunParseHostName( char* peerName,
+stunParseHostName( const char* peerName,
                    UInt32& ip,
                    UInt16& portVal,
                    UInt16 defaultPort );

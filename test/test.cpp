@@ -19,7 +19,8 @@ int main(int argc, char* argv[])
 	initNetwork();
 
 	StunAddress4 stunServerAddr;
-	bool ret = stunParseServerName("stun.schlund.de", stunServerAddr);
+	std::string stunServerHost = "stun.schlund.de";
+	bool ret = stunParseServerName(stunServerHost.c_str(), stunServerAddr);
 	if (!ret)
 	{
 		cout << "stunParseServerName Fail\n";
@@ -52,12 +53,12 @@ int main(int argc, char* argv[])
 	while (1)
 	{
 		in_addr tmp;
-		tmp.S_un.S_addr = htonl(mappedAddr.addr);
+		*(int*)&tmp = htonl(mappedAddr.addr);
 		sprintf(data, "this is from %s %d %d", inet_ntoa(tmp), mappedAddr.port, i);
 		
 		unsigned long ip = ntohl(inet_addr(dstIp.c_str()));
 		sendMessage(fd, data, strlen(data), ip, dstPort, false);
-		tmp.S_un.S_addr = htonl(ip);
+		*(int*)&tmp = htonl(ip);
 		printf("send to %s %d\n", inet_ntoa(tmp), dstPort);
 
 		unsigned int recvip;
@@ -66,7 +67,7 @@ int main(int argc, char* argv[])
 		memset(data, 0, sizeof(data));
  		if (getMessage(fd, data, &recvlen, &recvip, &recvport, false))
  		{
- 			tmp.S_un.S_addr = htonl(recvip);
+ 			*(int*)&tmp = htonl(recvip);
  			printf("recv %s from %s %d\n", data, inet_ntoa(tmp), recvport);
 		}
 

@@ -4,6 +4,8 @@
 #include <cstring>
 #include <iostream>
 #include <cstdlib>   
+#include <stdio.h>
+#include <stdarg.h>
 
 #ifdef WIN32
 #include <time.h>
@@ -13,6 +15,8 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <errno.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 #endif
 
 #include "udp.h"
