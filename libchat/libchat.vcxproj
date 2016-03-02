@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="libchat.cpp" />
+    <ClCompile Include="md5.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libchat.h" />

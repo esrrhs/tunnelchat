@@ -65,10 +65,10 @@ int main(int argc, char* argv[])
 		unsigned short recvport;
 		int recvlen = sizeof(data);
 		memset(data, 0, sizeof(data));
- 		if (getMessage(fd, data, &recvlen, &recvip, &recvport, false))
- 		{
- 			*(int*)&tmp = htonl(recvip);
- 			printf("recv %s from %s %d\n", data, inet_ntoa(tmp), recvport);
+		if (getMessage(fd, data, &recvlen, &recvip, &recvport, false))
+		{
+			*(int*)&tmp = htonl(recvip);
+			printf("recv %s from %s %d\n", data, inet_ntoa(tmp), recvport);
 		}
 
 		i++;

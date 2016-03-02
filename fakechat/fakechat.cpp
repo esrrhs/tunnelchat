@@ -46,14 +46,34 @@ Cmd List\n\
 ");
 }
 
+int new_guid()
+{
+	std::string guid = lc_newguid(g_cmd_param);
+	printf("%s\n", guid.c_str());
+	return 0;
+}
+
 int main(int argc, char* argv[])
 {
-	initNetwork();
+	lc_ini();
 
 	if (parsearg(argc, argv) != 0)
 	{
 		useage();
-		return -1;
+		return 0;
+	}
+
+	switch (g_cmd)
+	{
+	case ecc_none:
+		useage();
+		break;
+	case ecc_new:
+		new_guid();
+		break;
+	default:
+		useage();
+		break;
 	}
 
 	return 0;
