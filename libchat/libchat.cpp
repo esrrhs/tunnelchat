@@ -5,7 +5,40 @@
 void lc_ini()
 {
 	srand(time(0));
-	initNetwork();
+
+	{
+#ifdef WIN32 
+		WORD wVersionRequested = MAKEWORD( 2, 2 );
+		WSADATA wsaData;
+		int err;
+
+		err = WSAStartup( wVersionRequested, &wsaData );
+		if ( err != 0 ) 
+		{
+			// could not find a usable WinSock DLL
+			std::cerr << "Could not load winsock" << std::endl;
+			assert(0); // is this is failing, try a different version that 2.2, 1.0 or later will likely work 
+			exit(1);
+		}
+
+		/* Confirm that the WinSock DLL supports 2.2.*/
+		/* Note that if the DLL supports versions greater    */
+		/* than 2.2 in addition to 2.2, it will still return */
+		/* 2.2 in wVersion since that is the version we      */
+		/* requested.                                        */
+
+		if ( LOBYTE( wsaData.wVersion ) != 2 ||
+			HIBYTE( wsaData.wVersion ) != 2 ) 
+		{
+			/* Tell the user that we could not find a usable */
+			/* WinSock DLL.                                  */
+			WSACleanup( );
+			std::cerr << "Bad winsock verion" << std::endl;
+			assert(0); // is this is failing, try a different version that 2.2, 1.0 or later will likely work 
+			exit(1);
+		}    
+#endif
+	}
 }
 
 #ifdef WIN32

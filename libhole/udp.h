@@ -91,11 +91,6 @@ sendMessage( Socket fd, char* msg, int len,
              bool verbose);
 
 
-/// set up network - does nothing in unix but needed for windows
-void
-initNetwork();
-
-
 /* ====================================================================
  * The Vovida Software License, Version 1.0 
  * 

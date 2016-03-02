@@ -1,4 +1,4 @@
-#include "libhole.h"
+#include "libchat.h"
 
 #define MAX_NIC 3
 
@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
 	std::string dstIp = argv[2];
 	int dstPort = atoi(argv[3]);
 
-	initNetwork();
+	lc_ini();
 
 	StunAddress4 stunServerAddr;
 	std::string stunServerHost = "stun.schlund.de";
