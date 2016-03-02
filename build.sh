@@ -30,6 +30,7 @@ rm Makefile -rf
 cmake . $BUILD_FLAG
 make clean
 make -j5
+cd ..
 if [ $? -ne 0 ];then
 	echo "build libchat fail"
 	exit 1
@@ -44,6 +45,7 @@ rm Makefile -rf
 cmake . $BUILD_FLAG
 make clean
 make -j5
+cd ..
 if [ $? -ne 0 ];then
 	echo "build test fail"
 	exit 1
@@ -58,6 +60,7 @@ rm Makefile -rf
 cmake . $BUILD_FLAG
 make clean
 make -j5
+cd ..
 if [ $? -ne 0 ];then
 	echo "build fakechat fail"
 	exit 1

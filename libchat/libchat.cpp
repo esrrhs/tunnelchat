@@ -1,5 +1,7 @@
 #include "libchat.h"
 
+#include <string.h> 
+
 void lc_ini()
 {
 	srand(time(0));
@@ -78,6 +80,10 @@ std::string lc_get_mac()
 	return mac;
 }
 #else
+#include <sys/ioctl.h> 
+#include <sys/socket.h> 
+#include <netinet/in.h> 
+#include <net/if.h> 
 std::string lc_get_mac()
 {
 	struct ifreq ifreq; 
