@@ -13,9 +13,16 @@
   <ItemGroup>
     <ClCompile Include="libchat.cpp" />
     <ClCompile Include="md5.cpp" />
+    <ClCompile Include="tinystr.cpp" />
+    <ClCompile Include="tinyxml.cpp" />
+    <ClCompile Include="tinyxmlerror.cpp" />
+    <ClCompile Include="tinyxmlparser.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="configloader.h" />
     <ClInclude Include="libchat.h" />
+    <ClInclude Include="tinystr.h" />
+    <ClInclude Include="tinyxml.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{0EAA6807-EAE2-44F7-8861-209DF2FC0665}</ProjectGuid>

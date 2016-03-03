@@ -1,0 +1,16 @@
+<Config>  
+	
+	<STUN ip="stun.schlund.de" />  
+	<STUN ip="stun.schlund.de" />  
+	<STUN ip="stun.schlund.de" />  
+	
+	<User name="aaa" acc="zx" pwd="123" port="58888" />
+	
+	<Friend name="1215" acc="zxczxc" ip="123" port="58888" key="123123"/> 
+	<Friend name="1215" acc="zxczxc" ip="123" port="58888" key="123123"/> 
+	<Friend name="1215" acc="zxczxc" ip="123" port="58888" key="123123"/> 
+	<Friend name="1215" acc="zxczxc" ip="123" port="58888" key="123123"/> 
+	<Friend name="1215" acc="zxczxc" ip="123" port="58888" key="123123"/> 
+	<Friend name="1215" acc="zxczxc" ip="123" port="58888" key="123123"/>  
+	
+</Config>  

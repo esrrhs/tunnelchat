@@ -2,6 +2,23 @@
 
 #include "libhole.h"
 #include <stdint.h>
+#include "tinyxml.h"
+#include <vector>
+#include <string>
+
+#ifdef _DEBUG
+#define LCLOG(...) lclog("[DEBUG] ", __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);
+#define LCERR(...) lclog("[ERROR] ", __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);
+#define ISLOG 1
+#else
+#define LCLOG(...)
+#define LCERR(...)
+#define ISLOG 0
+#endif
+
+void lclog(const char * header, const char * file, const char * func, int pos, const char *fmt, ...);
+
+#include "configloader.h"
 
 // ≥ı ºªØ
 void lc_ini();
