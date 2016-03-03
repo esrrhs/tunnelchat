@@ -7,15 +7,15 @@
 {{define "Attri"}}{{if eq .Type "int"}}int32_t m_i{{.Name}};{{end}}{{if eq .Type "string"}}std::string m_str{{.Name}};{{end}}{{end}}
 {{define "Token"}}{{add_tab}}{{gen_tab}}struct ST{{.Name}}
 {{gen_tab}}{
-    {{gen_tab}}ST{{.Name}}()
-    {{gen_tab}}{
-        {{gen_tab}}{{range .Attributes}}
-        {{gen_tab}}{{template "SetAttri" .}}
-        {{gen_tab}}{{end}}
-    {{gen_tab}}}
-    {{gen_tab}}{{range .Attributes}}
-    {{gen_tab}}{{template "Attri" .}}
-    {{gen_tab}}{{end}}
+	{{gen_tab}}ST{{.Name}}()
+	{{gen_tab}}{
+		{{gen_tab}}{{range .Attributes}}
+		{{gen_tab}}{{template "SetAttri" .}}
+		{{gen_tab}}{{end}}
+	{{gen_tab}}}
+	{{gen_tab}}{{range .Attributes}}
+	{{gen_tab}}{{template "Attri" .}}
+	{{gen_tab}}{{end}}
 {{range .Tokens}}{{template "Token" .}}
 {{end}}
 {{gen_tab}}};
@@ -24,83 +24,143 @@
 {{gen_tab}}std::vector<ST{{.Name}}> m_vecST{{.Name}};{{else}}ST{{.Name}} m_ST{{.Name}};{{end}}{{dec_tab}}{{end}}
 
 {{define "ReadToken"}}{{add_tab}}
-    {{gen_tab}}{{gen_class}}ST{{.Name}} tmp{{.Name}};
-    {{gen_tab}}{{$StructName := .Name}}{{range .Attributes}}
-    {{gen_tab}}{{if eq .Type "int"}}((TiXmlElement *)p{{$StructName}})->Attribute("{{.Name}}", &tmp{{$StructName}}.m_i{{.Name}});
-    {{gen_tab}}LCLOG("{{gen_tab}}{{.Name}} %d", tmp{{$StructName}}.m_i{{.Name}});{{end}}{{if eq .Type "string"}}tmp{{$StructName}}.m_str{{.Name}} = ((TiXmlElement *)p{{$StructName}})->Attribute("{{.Name}}");
-    {{gen_tab}}LCLOG("{{gen_tab}}{{.Name}} %s", tmp{{$StructName}}.m_str{{.Name}}.c_str());{{end}}
-    {{gen_tab}}{{end}}
-    {{gen_tab}}{{$StructName := .Name}}{{push_class "ST" .Name}}{{range .Tokens}}
-    {{gen_tab}}{{if .IsArray}}for (TiXmlNode * p{{.Name}} = p{{$StructName}}->FirstChild("{{.Name}}"); NULL != p{{.Name}}; p{{.Name}} = p{{.Name}}->NextSibling("{{.Name}}")){{else}}TiXmlNode * p{{.Name}} = p{{$StructName}}->FirstChild("{{.Name}}");
-    {{gen_tab}}if (p{{.Name}}){{end}}
-    {{gen_tab}}{
-    {{gen_tab}}{{template "ReadToken" .}}
-    {{gen_tab}}{{if .IsArray}}tmp{{$StructName}}.m_vecST{{.Name}}.push_back(tmp{{.Name}});{{else}}tmp{{$StructName}}.m_ST{{.Name}} = tmp{{.Name}};{{end}}
-    {{gen_tab}}}{{end}}
+	{{gen_tab}}{{gen_class}}ST{{.Name}} tmp{{.Name}};
+	{{gen_tab}}{{$StructName := .Name}}{{range .Attributes}}
+	{{gen_tab}}{{if eq .Type "int"}}((TiXmlElement *)p{{$StructName}})->Attribute("{{.Name}}", &tmp{{$StructName}}.m_i{{.Name}});
+	{{gen_tab}}LCLOG("{{gen_tab}}{{.Name}} %d", tmp{{$StructName}}.m_i{{.Name}});{{end}}{{if eq .Type "string"}}tmp{{$StructName}}.m_str{{.Name}} = ((TiXmlElement *)p{{$StructName}})->Attribute("{{.Name}}");
+	{{gen_tab}}LCLOG("{{gen_tab}}{{.Name}} %s", tmp{{$StructName}}.m_str{{.Name}}.c_str());{{end}}
+	{{gen_tab}}{{end}}
+	{{gen_tab}}{{$StructName := .Name}}{{push_class "ST" .Name}}{{range .Tokens}}
+	{{gen_tab}}{{if .IsArray}}for (TiXmlNode * p{{.Name}} = p{{$StructName}}->FirstChild("{{.Name}}"); NULL != p{{.Name}}; p{{.Name}} = p{{.Name}}->NextSibling("{{.Name}}")){{else}}TiXmlNode * p{{.Name}} = p{{$StructName}}->FirstChild("{{.Name}}");
+	{{gen_tab}}if (p{{.Name}}){{end}}
+	{{gen_tab}}{
+	{{gen_tab}}{{template "ReadToken" .}}
+	{{gen_tab}}{{if .IsArray}}	tmp{{$StructName}}.m_vecST{{.Name}}.push_back(tmp{{.Name}});{{else}}	tmp{{$StructName}}.m_ST{{.Name}} = tmp{{.Name}};{{end}}
+	{{gen_tab}}}{{end}}
+{{dec_tab}}{{pop_class}}{{end}}
+
+{{define "WriteToken"}}{{add_tab}}
+	{{gen_tab}}TiXmlElement tmpXml{{.Name}}("{{.Name}}");
+	{{gen_tab}}{{$StructName := .Name}}{{range .Attributes}}
+	{{gen_tab}}{{if eq .Type "int"}}tmpXml{{$StructName}}.SetAttribute("{{.Name}}", tmp{{$StructName}}.m_i{{.Name}});
+	{{gen_tab}}LCLOG("{{gen_tab}}{{.Name}} %d", tmp{{$StructName}}.m_i{{.Name}});{{end}}{{if eq .Type "string"}}tmpXml{{$StructName}}.SetAttribute("{{.Name}}", tmp{{$StructName}}.m_str{{.Name}}.c_str());
+	{{gen_tab}}LCLOG("{{gen_tab}}{{.Name}} %s", tmp{{$StructName}}.m_str{{.Name}}.c_str());{{end}}
+	{{gen_tab}}{{end}}
+	{{gen_tab}}{{$StructName := .Name}}{{push_class "ST" .Name}}{{range .Tokens}}
+	{{gen_tab}}{{if .IsArray}}for (int i = 0; i < (int)tmp{{$StructName}}.m_vecST{{.Name}}.size(); i++)
+	{{gen_tab}}{
+	{{gen_tab}}	{{gen_class}}ST{{.Name}} & tmp{{.Name}} = tmp{{$StructName}}.m_vecST{{.Name}}[i];
+	{{gen_tab}}	TiXmlElement * pFather = &tmpXml{{$StructName}};
+	{{gen_tab}}{{template "WriteToken" .}}
+	{{gen_tab}}}{{else}}
+	{{gen_tab}}{
+	{{gen_tab}}{{gen_class}}	ST{{.Name}} & tmp{{.Name}} =  tmp{{$StructName}}.m_ST{{.Name}};
+	{{gen_tab}}	TiXmlElement * pFather = &tmpXml{{$StructName}};
+	{{gen_tab}}{{template "WriteToken" .}}
+	{{gen_tab}}}{{end}}
+	{{gen_tab}}{{end}}
+	{{gen_tab}}pFather->InsertEndChild(tmpXml{{.Name}});
 {{dec_tab}}{{pop_class}}{{end}}
 
 class C{{.Name}}Loader
 {
 public:{{add_tab}}
-    struct ST{{.Name}}
-    {
-        ST{{.Name}}()
-        {
-            {{range .Attributes}}
-            {{template "SetAttri" .}}
-            {{end}}
-        }
-        {{range .Attributes}}
-        {{template "Attri" .}}
-        {{end}}
+	struct ST{{.Name}}
+	{
+		ST{{.Name}}()
+		{
+			{{range .Attributes}}
+			{{template "SetAttri" .}}
+			{{end}}
+		}
+		{{range .Attributes}}
+		{{template "Attri" .}}
+		{{end}}
 {{range .Tokens}}{{template "Token" .}}
 {{end}}
-    };
-    
-    ST{{.Name}} & Get{{.Name}}()
-    {
-        return m_ST{{.Name}};
-    }
-    
-    bool LoadCfg(const std::string & file)
-    {
-        TiXmlDocument document;
-        if (!document.LoadFile((const char*)file.c_str()))
-        {
-            LCERR("C{{.Name}}Loader::LoadCfg(%s) failed", (const char*)file.c_str());
-            return false;
-        }
-        
-        TiXmlElement* p{{.Name}} = document.RootElement();
-        if (!p{{.Name}})
-        {
-            LCERR("document.RootElement failed");
-            return false;
-        }
-        
-        // clear
-        ST{{.Name}} tmp;
-        m_ST{{.Name}} = tmp;
-        
-        {{$StructName := .Name}}{{range .Attributes}}
-        {{if eq .Type "int"}}((TiXmlElement *)p{{$StructName}})->Attribute("{{.Name}}", &m_ST{{$StructName}}.m_i{{.Name}});
-        LCLOG("{{.Name}} %d", m_ST{{$StructName}}.m_i{{.Name}});{{end}}{{if eq .Type "string"}}m_ST{{$StructName}}.m_str{{.Name}} = ((TiXmlElement *)p{{$StructName}})->Attribute("{{.Name}}");
-        LCLOG("{{.Name}} %s", m_ST{{$StructName}}.m_str{{.Name}}.c_str());{{end}}
-        {{end}}
-        
-        {{$StructName := .Name}}{{push_class "ST" .Name}}{{range .Tokens}}
-        {{if .IsArray}}for (TiXmlNode * p{{.Name}} = p{{$StructName}}->FirstChild("{{.Name}}"); NULL != p{{.Name}}; p{{.Name}} = p{{.Name}}->NextSibling("{{.Name}}")){{else}}TiXmlNode * p{{.Name}} = p{{$StructName}}->FirstChild("{{.Name}}");
-        if (p{{.Name}}){{end}}
-        {
-            {{template "ReadToken" .}}
-            {{if .IsArray}}m_ST{{$StructName}}.m_vecST{{.Name}}.push_back(tmp{{.Name}});{{else}}m_ST{{$StructName}}.m_ST{{.Name}} = tmp{{.Name}};{{end}}
-        }{{end}}
-        
-        return true;
-    }
-    
+	};
+	
+	ST{{.Name}} & Get{{.Name}}()
+	{
+		return m_ST{{.Name}};
+	}
+	
+	bool LoadCfg(const std::string & file)
+	{
+		TiXmlDocument document;
+		if (!document.LoadFile((const char*)file.c_str()))
+		{
+			LCERR("C{{.Name}}Loader::LoadCfg(%s) failed", (const char*)file.c_str());
+			return false;
+		}
+		
+		TiXmlElement* p{{.Name}} = document.RootElement();
+		if (!p{{.Name}})
+		{
+			LCERR("document.RootElement failed");
+			return false;
+		}
+		
+		// clear
+		ST{{.Name}} tmp;
+		m_ST{{.Name}} = tmp;
+		
+		{{$StructName := .Name}}{{range .Attributes}}
+		{{if eq .Type "int"}}((TiXmlElement *)p{{$StructName}})->Attribute("{{.Name}}", &m_ST{{$StructName}}.m_i{{.Name}});
+		LCLOG("{{.Name}} %d", m_ST{{$StructName}}.m_i{{.Name}});{{end}}{{if eq .Type "string"}}m_ST{{$StructName}}.m_str{{.Name}} = ((TiXmlElement *)p{{$StructName}})->Attribute("{{.Name}}");
+		LCLOG("{{.Name}} %s", m_ST{{$StructName}}.m_str{{.Name}}.c_str());{{end}}
+		{{end}}
+		
+		{{$StructName := .Name}}{{push_class "ST" .Name}}{{range .Tokens}}
+		{{if .IsArray}}for (TiXmlNode * p{{.Name}} = p{{$StructName}}->FirstChild("{{.Name}}"); NULL != p{{.Name}}; p{{.Name}} = p{{.Name}}->NextSibling("{{.Name}}")){{else}}TiXmlNode * p{{.Name}} = p{{$StructName}}->FirstChild("{{.Name}}");
+		if (p{{.Name}}){{end}}
+		{
+			{{template "ReadToken" .}}
+			{{if .IsArray}}m_ST{{$StructName}}.m_vecST{{.Name}}.push_back(tmp{{.Name}});{{else}}m_ST{{$StructName}}.m_ST{{.Name}} = tmp{{.Name}};{{end}}
+		}{{end}}{{pop_class}}
+		
+		return true;
+	}
+	
+	bool SaveCfg(const std::string & file)
+	{
+		TiXmlDocument document;
+		
+		TiXmlElement tmpXml{{.Name}}("{{.Name}}");
+		
+		{{$StructName := .Name}}{{range .Attributes}}
+		{{if eq .Type "int"}}tmpXml{{$StructName}}.SetAttribute("{{.Name}}", m_ST{{$StructName}}.m_i{{.Name}});
+		LCLOG("{{.Name}} %d", m_ST{{$StructName}}.m_i{{.Name}});{{end}}{{if eq .Type "string"}}tmpXml{{$StructName}}.SetAttribute("{{.Name}}", m_ST{{$StructName}}.m_str{{.Name}}.c_str());
+		LCLOG("{{.Name}} %s", m_ST{{$StructName}}.m_str{{.Name}}.c_str());{{end}}
+		{{end}}
+		
+		{{$StructName := .Name}}{{push_class "ST" .Name}}{{range .Tokens}}
+		{{if .IsArray}}for (int i = 0; i < (int)m_ST{{$StructName}}.m_vecST{{.Name}}.size(); i++)
+		{
+			{{gen_class}}ST{{.Name}} & tmp{{.Name}} = m_ST{{$StructName}}.m_vecST{{.Name}}[i];
+			TiXmlElement * pFather = &tmpXml{{$StructName}};
+			{{template "WriteToken" .}}
+		}
+		{{else}}
+		{
+			{{gen_class}}ST{{.Name}} & tmp{{.Name}} =  m_ST{{$StructName}}.m_ST{{.Name}};
+			TiXmlElement * pFather = &tmpXml{{$StructName}};
+			{{template "WriteToken" .}}
+		}{{end}}{{end}}{{pop_class}}
+		
+		document.InsertEndChild(tmpXml{{.Name}});
+		
+		if (!document.SaveFile((const char*)file.c_str()))
+		{
+			LCERR("C{{.Name}}Loader::SaveCfg(%s) failed", (const char*)file.c_str());
+			return false;
+		}
+		
+		return true;
+	}
+	
 private:
-    ST{{.Name}} m_ST{{.Name}};
+	ST{{.Name}} m_ST{{.Name}};
 };
 
 extern C{{.Name}}Loader g_C{{.Name}}Loader;

@@ -179,7 +179,7 @@ func dec_tab() string {
 func gen_tab() string {
 	ret := ""
 	for i := 0; i < g_tabNum; i++ {
-		ret += "    "
+		ret += "	"
 	}
 	return ret
 }

@@ -72,9 +72,21 @@ void lc_ini()
 
 	if (!g_CConfigLoader.LoadCfg("fakechat.xml"))
 	{
-		CConfigLoader::STConfig::STSTUN tmp;
-		tmp.m_strip = "stun.schlund.de";
-		g_CConfigLoader.GetConfig().m_vecSTSTUN.push_back(tmp);
+		{
+			CConfigLoader::STConfig::STFriendList::STFriend tmp;
+			g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend.push_back(tmp);
+			g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend.push_back(tmp);
+			g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend.push_back(tmp);
+		}
+
+		{
+			CConfigLoader::STConfig::STSTUNServer::STSTUN tmp;
+			tmp.m_strip = "stun.schlund.de";
+			g_CConfigLoader.GetConfig().m_STSTUNServer.m_vecSTSTUN.push_back(tmp);
+			g_CConfigLoader.GetConfig().m_STSTUNServer.m_vecSTSTUN.push_back(tmp);
+			g_CConfigLoader.GetConfig().m_STSTUNServer.m_vecSTSTUN.push_back(tmp);
+		}
+
 		g_CConfigLoader.SaveCfg("fakechat.xml");
 	}
 }
