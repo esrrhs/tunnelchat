@@ -2,6 +2,7 @@
 #include <string.h> 
 
 CConfigLoader g_CConfigLoader;
+int g_fd = -1;
 
 void lclog(const char * header, const char * file, const char * func, int pos, const char *fmt, ...)
 {
@@ -34,6 +35,8 @@ void lclog(const char * header, const char * file, const char * func, int pos, c
 
 bool lc_ini()
 {
+	LCLOG("lc_ini");
+
 	srand(time(0));
 
 	{
@@ -92,6 +95,7 @@ bool lc_ini()
 
 bool lc_chekcp2p()
 {
+	LCLOG("start lc_chekcp2p");
 	StunAddress4 stunServerAddr;
 	NatType stype = StunTypeUnknown;
 	int trytime = 0;
@@ -124,6 +128,8 @@ bool lc_chekcp2p()
 
 				i--;
 				trytime++;
+
+				lc_sleep(100);
 			}
 		}
 	}
@@ -142,15 +148,22 @@ bool lc_chekcp2p()
 	}
 
 	StunAddress4 mappedAddr;
-	int fd = stunOpenSocket(stunServerAddr, &mappedAddr,
+	g_fd = stunOpenSocket(stunServerAddr, &mappedAddr,
 		g_CConfigLoader.GetConfig().m_STUser.m_iport, 0,
 		false);
+
+	if (g_fd == -1)
+	{
+		LCERR("stunOpenSocket fd Fail");
+		return false;
+	}
 
 	g_CConfigLoader.GetConfig().m_STUser.m_strip = lc_get_stunaddr_ip(mappedAddr);
 	g_CConfigLoader.GetConfig().m_STUser.m_iport = mappedAddr.port;
 
-	LCLOG("stunOpenSocket OK %s %d", g_CConfigLoader.GetConfig().m_STUser.m_strip.c_str(), 
-		g_CConfigLoader.GetConfig().m_STUser.m_iport);
+	LCLOG("stunOpenSocket OK %s %d %d", g_CConfigLoader.GetConfig().m_STUser.m_strip.c_str(), 
+		g_CConfigLoader.GetConfig().m_STUser.m_iport,
+		g_fd);
 
 	return true;
 }
@@ -158,6 +171,10 @@ bool lc_chekcp2p()
 bool lc_fini()
 {
 	g_CConfigLoader.SaveCfg("fakechat.xml");
+	if (g_fd != -1)
+	{
+		closesocket(g_fd);
+	}
 	return true;
 }
 
@@ -379,5 +396,38 @@ std::string lc_itoa16( uint32_t number )
 
 	ret = &tmpbuf[idx];
 	return ret;
+}
+
+std::string lc_des_str( const std::string & strkey, const std::string & s_text );
+std::string lc_des( const std::string & strkey, const std::string & s_text )
+{
+	std::string k = lc_md5(strkey.c_str(), strkey.size());
+	std::string v;
+	for (int i = 0; i < (int)s_text.size(); i += DES_BUFF_LEN)
+	{
+		v += lc_des_str(k, s_text.c_str() + i);
+	}
+	return v;
+}
+
+std::string lc_undes_str( const std::string & strkey, const std::string & s_text );
+std::string lc_undes( const std::string & strkey, const std::string & s_text )
+{
+	std::string k = lc_md5(strkey.c_str(), strkey.size());
+	std::string v;
+	for (int i = 0; i < (int)s_text.size(); i += DES_BUFF_LEN * 2)
+	{
+		v += lc_undes_str(k, s_text.c_str() + i);
+	}
+	return v;
+}
+
+void lc_sleep( int32_t millionseconds )
+{
+#if defined(WIN32)
+	Sleep(millionseconds);
+#else
+	usleep(millionseconds * 1000);
+#endif
 }
 

@@ -57,8 +57,8 @@ int lc_atoi16(const std::string & str);
 std::string lc_itoa16(uint32_t number);
 
 // des
-void lc_des(const std::string & strkey, const char * s_text, size_t s_len, char (&d_text)[DES_BUFF_LEN]);
 std::string lc_des(const std::string & strkey, const std::string & s_text);
-
-void lc_undes(const std::string & strkey, const char * s_text, size_t s_len, char (&d_text)[DES_BUFF_LEN]);
 std::string lc_undes(const std::string & strkey, const std::string & s_text);
+
+// sleep
+void lc_sleep(int32_t millionseconds);

@@ -530,7 +530,7 @@ void lc_des(const std::string & strkey, const char * s_text, size_t s_len, char 
 	des_ecb_encrypt(stext, (uint8_t (&)[DES_BUFF_LEN])d_text, &(sch[0]), 1);
 }
 
-std::string lc_des(const std::string & strkey, const std::string & s_text)
+std::string lc_des_str(const std::string & strkey, const std::string & s_text)
 {
 	char d_text[DES_BUFF_LEN] = {0};
     lc_des(strkey, s_text.c_str(), s_text.size(), d_text);
@@ -569,7 +569,7 @@ void lc_undes(const std::string & strkey, const char * s_text, size_t s_len, cha
 	des_ecb_encrypt(stext, (uint8_t (&)[DES_BUFF_LEN])d_text, &(sch[0]), 0);
 }
 
-std::string lc_undes(const std::string & strkey, const std::string & s_text)
+std::string lc_undes_str(const std::string & strkey, const std::string & s_text)
 {
     char stext[DES_BUFF_LEN] = {0};
     memset(stext, 0, sizeof(stext));

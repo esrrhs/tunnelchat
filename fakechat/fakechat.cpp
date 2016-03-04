@@ -7,6 +7,7 @@ enum echatcmd
 	ecc_none,
 	ecc_new,
 	ecc_info,
+	ecc_add,
 };
 echatcmd g_cmd = ecc_none;
 std::string g_cmd_param1 = "";
@@ -29,6 +30,11 @@ int parsearg(int argc, char* argv[])
 	{
 		g_cmd = ecc_info;
 		goto END;
+	}
+	else if (!strcmp(cmd.c_str(), "add"))
+	{
+		g_cmd = ecc_add;
+		goto PARAM1;
 	}
 
 PARAM2:
@@ -59,6 +65,10 @@ Arg : [cmd] [param] \n\
 Cmd List\n\
 	new [name] [pwd]\n\
 		create new user by name and password\n\
+	info\n\
+		get my info, somebody can use it to add me friend\n\
+	add [info]\n\
+		add somebody to my friend by info\n\
 ");
 }
 
@@ -76,10 +86,19 @@ void info()
 	}
 	else
 	{
-		printf("my info:\n%s %s %d\n", g_CConfigLoader.GetConfig().m_STUser.m_stracc.c_str(), 
+		char buff[100];
+		sprintf(buff, "%s %s %d", g_CConfigLoader.GetConfig().m_STUser.m_stracc.c_str(), 
 			g_CConfigLoader.GetConfig().m_STUser.m_strip.c_str(), 
 			g_CConfigLoader.GetConfig().m_STUser.m_iport);
+		std::string info = lc_des("fakechat", buff);
+		printf("my info:\n%s\n", info.c_str());
 	}
+}
+
+void add()
+{
+	std::string info = lc_undes("fakechat", g_cmd_param1);
+	printf("friend info:\n%s\n", info.c_str());
 }
 
 int main(int argc, char* argv[])
@@ -105,6 +124,9 @@ int main(int argc, char* argv[])
 		break;
 	case ecc_info:
 		info();
+		break;
+	case ecc_add:
+		add();
 		break;
 	default:
 		useage();
