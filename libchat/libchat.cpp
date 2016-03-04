@@ -87,6 +87,7 @@ bool lc_ini()
 	// 开始查看局域网
 	if (!lc_chekcp2p())
 	{
+		printf("sorry, your network cant support p2p\n");
 		return false;
 	}
 
