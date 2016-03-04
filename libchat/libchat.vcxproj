@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="des.cpp" />
     <ClCompile Include="libchat.cpp" />
     <ClCompile Include="md5.cpp" />
     <ClCompile Include="tinystr.cpp" />

@@ -16,6 +16,8 @@
 #define ISLOG 0
 #endif
 
+#define DES_BUFF_LEN 8
+
 void lclog(const char * header, const char * file, const char * func, int pos, const char *fmt, ...);
 
 #include "configloader.h"
@@ -49,3 +51,14 @@ std::string lc_get_stunaddr_ip(StunAddress4 addr);
 
 // 随机端口
 int lc_randport();
+
+// 16进制转换
+int lc_atoi16(const std::string & str);
+std::string lc_itoa16(uint32_t number);
+
+// des
+void lc_des(const std::string & strkey, const char * s_text, size_t s_len, char (&d_text)[DES_BUFF_LEN]);
+std::string lc_des(const std::string & strkey, const std::string & s_text);
+
+void lc_undes(const std::string & strkey, const char * s_text, size_t s_len, char (&d_text)[DES_BUFF_LEN]);
+std::string lc_undes(const std::string & strkey, const std::string & s_text);

@@ -252,16 +252,20 @@ std::string lc_md5(const char * str, size_t len)
     MD5_fini(hash);
         
 	std::string ret;
-    for ( i = 0 ; i < 16 ; i++ )
-    {
-		const char chars[]="0123456789ABCDEF";
+	for ( i = 0 ; i < 16 ; i++ )
+	{
+		std::string rettmp = lc_itoa16((uint8_t)hash[i]);
 
-		std::string rettmp;
-		rettmp = chars[(hash[i] % 16)];
-		hash[i] /= 16;
-		ret += chars[(hash[i] % 16)];
-		ret += rettmp;
-    }
+		if (rettmp.size() == 1)
+		{
+			ret += "0";
+			ret += rettmp;
+		}
+		else
+		{
+			ret += rettmp;
+		}
+	}
 
     return ret;
 }

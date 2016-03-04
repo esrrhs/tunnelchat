@@ -329,3 +329,55 @@ int lc_randport()
 	return 50000 + rand() % 10000;
 }
 
+int lc_atoi16( const std::string & str )
+{
+	int32_t ret = 0;   
+	for (int32_t i = 0; i < (int32_t)str.size(); i++)   
+	{		
+		const uint8_t & c = str[i];	
+		if (c >= '0' && c <= '9')	
+		{		
+			ret = ret * 16 + (c - '0');	
+		}	
+		else if (c >= 'A' && c <= 'F')		
+		{		
+			ret = ret * 16 + (c - 'A') + 10;	
+		}  
+		else if (c >= 'a' && c <= 'f')		
+		{		
+			ret = ret * 16 + (c - 'a') + 10;	
+		}  
+	}
+	return ret;
+}
+
+std::string lc_itoa16( uint32_t number )
+{
+	std::string ret;
+
+	// temporary buffer for 16 numbers
+	char tmpbuf[16]={0};
+	uint32_t idx = 15;
+
+	// special case '0'
+
+	if (!number)
+	{
+		tmpbuf[14] = '0';
+		ret = &tmpbuf[14];
+		return ret;
+	}
+
+	// add numbers
+	const uint8_t chars[]="0123456789ABCDEF";
+	while(number && idx)
+	{
+		--idx;
+		tmpbuf[idx] = chars[(number % 16)];
+		number /= 16;
+	}
+
+	ret = &tmpbuf[idx];
+	return ret;
+}
+
