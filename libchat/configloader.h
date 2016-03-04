@@ -98,6 +98,8 @@ public:
 				
 				m_stracc.clear();
 				
+				m_strip.clear();
+				
 				m_strname.clear();
 				
 				m_iport = 0;
@@ -107,6 +109,8 @@ public:
 			}
 			
 			std::string m_stracc;
+			
+			std::string m_strip;
 			
 			std::string m_strname;
 			
@@ -214,6 +218,9 @@ public:
 			tmpUser.m_stracc = ((TiXmlElement *)pUser)->Attribute("acc");
 			LCLOG("		acc %s", tmpUser.m_stracc.c_str());
 			
+			tmpUser.m_strip = ((TiXmlElement *)pUser)->Attribute("ip");
+			LCLOG("		ip %s", tmpUser.m_strip.c_str());
+			
 			tmpUser.m_strname = ((TiXmlElement *)pUser)->Attribute("name");
 			LCLOG("		name %s", tmpUser.m_strname.c_str());
 			
@@ -313,6 +320,9 @@ public:
 			
 			tmpXmlUser.SetAttribute("acc", tmpUser.m_stracc.c_str());
 			LCLOG("		acc %s", tmpUser.m_stracc.c_str());
+			
+			tmpXmlUser.SetAttribute("ip", tmpUser.m_strip.c_str());
+			LCLOG("		ip %s", tmpUser.m_strip.c_str());
 			
 			tmpXmlUser.SetAttribute("name", tmpUser.m_strname.c_str());
 			LCLOG("		name %s", tmpUser.m_strname.c_str());

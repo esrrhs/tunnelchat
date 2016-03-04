@@ -32,7 +32,7 @@ void lclog(const char * header, const char * file, const char * func, int pos, c
 	fclose(pLog);
 }
 
-void lc_ini()
+bool lc_ini()
 {
 	srand(time(0));
 
@@ -73,22 +73,92 @@ void lc_ini()
 	if (!g_CConfigLoader.LoadCfg("fakechat.xml"))
 	{
 		{
-			CConfigLoader::STConfig::STFriendList::STFriend tmp;
-			g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend.push_back(tmp);
-			g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend.push_back(tmp);
-			g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend.push_back(tmp);
-		}
-
-		{
 			CConfigLoader::STConfig::STSTUNServer::STSTUN tmp;
 			tmp.m_strip = "stun.schlund.de";
 			g_CConfigLoader.GetConfig().m_STSTUNServer.m_vecSTSTUN.push_back(tmp);
-			g_CConfigLoader.GetConfig().m_STSTUNServer.m_vecSTSTUN.push_back(tmp);
-			g_CConfigLoader.GetConfig().m_STSTUNServer.m_vecSTSTUN.push_back(tmp);
 		}
 
-		g_CConfigLoader.SaveCfg("fakechat.xml");
+		g_CConfigLoader.GetConfig().m_STUser.m_iport = lc_randport();
 	}
+
+	// 开始查看局域网
+	if (!lc_chekcp2p())
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool lc_chekcp2p()
+{
+	StunAddress4 stunServerAddr;
+	NatType stype = StunTypeUnknown;
+	int trytime = 0;
+	for (int i = 0; i < (int)g_CConfigLoader.GetConfig().m_STSTUNServer.m_vecSTSTUN.size(); i++)
+	{
+		std::string stunServerHost = g_CConfigLoader.GetConfig().m_STSTUNServer.m_vecSTSTUN[i].m_strip;
+		bool ret = stunParseServerName(stunServerHost.c_str(), stunServerAddr);
+		if (!ret)
+		{
+			LCERR("stunParseServerName Fail %s", stunServerHost.c_str());
+			continue;
+		}
+
+		stype = stunNatType( stunServerAddr, false, 0, 0, 
+			g_CConfigLoader.GetConfig().m_STUser.m_iport, 0);
+
+		if (stype == StunTypeOpen || 
+			stype == StunTypeIndependentFilter || 
+			stype == StunTypeDependentFilter || 
+			stype == StunTypePortDependedFilter)
+		{
+			break;
+		}
+		else
+		{
+			if (trytime < 10)
+			{
+				// 有可能端口被别人占用了，换个
+				g_CConfigLoader.GetConfig().m_STUser.m_iport = lc_randport();
+
+				i--;
+				trytime++;
+			}
+		}
+	}
+
+	if (stype == StunTypeOpen || 
+		stype == StunTypeIndependentFilter || 
+		stype == StunTypeDependentFilter || 
+		stype == StunTypePortDependedFilter)
+	{
+		LCLOG("stunNatType %d", stype);
+	}
+	else
+	{
+		LCERR("stunNatType Not Support Fail %d", stype);
+		return false;
+	}
+
+	StunAddress4 mappedAddr;
+	int fd = stunOpenSocket(stunServerAddr, &mappedAddr,
+		g_CConfigLoader.GetConfig().m_STUser.m_iport, 0,
+		false);
+
+	g_CConfigLoader.GetConfig().m_STUser.m_strip = lc_get_stunaddr_ip(mappedAddr);
+	g_CConfigLoader.GetConfig().m_STUser.m_iport = mappedAddr.port;
+
+	LCLOG("stunOpenSocket OK %s %d", g_CConfigLoader.GetConfig().m_STUser.m_strip.c_str(), 
+		g_CConfigLoader.GetConfig().m_STUser.m_iport);
+
+	return true;
+}
+
+bool lc_fini()
+{
+	g_CConfigLoader.SaveCfg("fakechat.xml");
+	return true;
 }
 
 #ifdef WIN32
@@ -230,3 +300,32 @@ uint32_t lc_getmstick()
 	return 0;
 #endif
 }
+
+void lc_newuser( std::string name, std::string pwd )
+{
+	if (!g_CConfigLoader.GetConfig().m_STUser.m_stracc.empty())
+	{
+		printf("already have user %s, overwrite? y/n\n", g_CConfigLoader.GetConfig().m_STUser.m_stracc.c_str());
+		if (getchar() != 'y')
+		{
+			return;
+		}
+	}
+
+	g_CConfigLoader.GetConfig().m_STUser.m_stracc = lc_newguid(name);
+	g_CConfigLoader.GetConfig().m_STUser.m_strpwd = lc_newguid(pwd);
+	g_CConfigLoader.GetConfig().m_STUser.m_strname = name;
+}
+
+std::string lc_get_stunaddr_ip( StunAddress4 addr )
+{
+	in_addr tmp;
+	*(int*)&tmp = htonl(addr.addr);
+	return inet_ntoa(tmp);
+}
+
+int lc_randport()
+{
+	return 50000 + rand() % 10000;
+}
+

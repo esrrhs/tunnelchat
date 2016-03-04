@@ -6,9 +6,11 @@ enum echatcmd
 {
 	ecc_none,
 	ecc_new,
+	ecc_info,
 };
 echatcmd g_cmd = ecc_none;
-std::string g_cmd_param = "";
+std::string g_cmd_param1 = "";
+std::string g_cmd_param2 = "";
 
 int parsearg(int argc, char* argv[])
 {
@@ -21,15 +23,29 @@ int parsearg(int argc, char* argv[])
 	if (!strcmp(cmd.c_str(), "new"))
 	{
 		g_cmd = ecc_new;
-		goto PARAM;
+		goto PARAM2;
+	}
+	else if (!strcmp(cmd.c_str(), "info"))
+	{
+		g_cmd = ecc_info;
+		goto END;
 	}
 
-PARAM:
+PARAM2:
+	if (argc < 4)
+	{
+		return -1;
+	}
+	g_cmd_param2 = argv[3];
+
+PARAM1:
 	if (argc < 3)
 	{
 		return -1;
 	}
-	g_cmd_param = argv[2];
+	g_cmd_param1 = argv[2];
+
+END:
 
 	return 0;
 }
@@ -41,26 +57,42 @@ Fakechat \n\n\
 Arg : [cmd] [param] \n\
 \n\
 Cmd List\n\
-	new [name]\n\
-		create new user by name\n\
+	new [name] [pwd]\n\
+		create new user by name and password\n\
 ");
 }
 
 int new_guid()
 {
-	std::string guid = lc_newguid(g_cmd_param);
-	printf("%s\n", guid.c_str());
+	lc_newuser(g_cmd_param1, g_cmd_param2);
 	return 0;
+}
+
+void info()
+{
+	if (g_CConfigLoader.GetConfig().m_STUser.m_stracc.empty())
+	{
+		printf("no info, plese create first, use [new] command\n");
+	}
+	else
+	{
+		printf("my info:\n%s %s %d\n", g_CConfigLoader.GetConfig().m_STUser.m_stracc.c_str(), 
+			g_CConfigLoader.GetConfig().m_STUser.m_strip.c_str(), 
+			g_CConfigLoader.GetConfig().m_STUser.m_iport);
+	}
 }
 
 int main(int argc, char* argv[])
 {
-	lc_ini();
+	if (!lc_ini())
+	{
+		goto EIXT;
+	}
 
 	if (parsearg(argc, argv) != 0)
 	{
 		useage();
-		return 0;
+		goto EIXT;
 	}
 
 	switch (g_cmd)
@@ -71,11 +103,16 @@ int main(int argc, char* argv[])
 	case ecc_new:
 		new_guid();
 		break;
+	case ecc_info:
+		info();
+		break;
 	default:
 		useage();
 		break;
 	}
 
+EIXT:
+	lc_fini();
 	return 0;
 }
 

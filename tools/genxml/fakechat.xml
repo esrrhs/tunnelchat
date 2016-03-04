@@ -9,5 +9,5 @@
         <STUN ip="stun.schlund.de" />
         <STUN ip="stun.schlund.de" />
     </STUNServer>
-    <User acc="aa" name="aa" port="0" pwd="aa" />
+    <User acc="aa" name="aa" ip="aa" port="0" pwd="aa" />
 </Config>
