@@ -499,6 +499,7 @@ void lc_send_udp( const std::string & ip, int port, const std::string & msg )
 {
 	unsigned long uip = ntohl(inet_addr(ip.c_str()));
 	sendMessage(g_fd, msg.c_str(), msg.size(), uip, port, false);
+	LCLOG("send %s %d : %s", ip.c_str(), port, msg.c_str());
 }
 
 bool lc_recv( const std::string & msgid, std::string & ret )
@@ -548,7 +549,7 @@ void lc_process()
 		unsigned short recvport;
 		int recvlen = sizeof(data);
 		memset(data, 0, sizeof(data));
-		if (getMessage(g_fd, data, &recvlen, &recvip, &recvport, false))
+		if (getMessage(g_fd, data, &recvlen, &recvip, &recvport, false, MSG_DONTWAIT))
 		{
 			in_addr tmpaddr;
 			*(int*)&tmpaddr = htonl(recvip);
@@ -583,6 +584,7 @@ void lc_msg_process( const std::string & ip, int port, const std::string & msg )
 	retvec.erase(retvec.begin());
 	retvec.erase(retvec.begin());
 	std::string msgdata = lc_combine(retvec, " ");
+	LCLOG("recv %s %d : %s %s %s", ip.c_str(), port, msgid.c_str(), msgcmd.c_str(), msg.c_str());
 	if (msgcmd == "ans")
 	{
 		for (int i = 0; i < (int)g_MsgData.size(); i++)
