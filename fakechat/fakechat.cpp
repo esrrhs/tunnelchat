@@ -98,7 +98,19 @@ void info()
 void add()
 {
 	std::string info = lc_undes("fakechat", g_cmd_param1);
-	printf("friend info:\n%s\n", info.c_str());
+	std::vector<std::string> param = lc_token(info, " ");
+	if (param.size() < 3)
+	{
+		printf("info error\n");
+	}
+	if (lc_send_add(param[1], atoi(param[2].c_str()), param[0]))
+	{
+		printf("add ok\n");
+	}
+	else
+	{
+		printf("add fail\n");
+	}
 }
 
 int main(int argc, char* argv[])

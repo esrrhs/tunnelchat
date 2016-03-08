@@ -5,6 +5,7 @@
 #include "tinyxml.h"
 #include <vector>
 #include <string>
+#include <deque> 
 
 #ifdef _DEBUG
 #define LCLOG(...) lclog("[DEBUG] ", __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);
@@ -16,6 +17,7 @@
 #define ISLOG 0
 #endif
 
+#define MAX_MSG_LEN 512
 #define DES_BUFF_LEN 8
 
 void lclog(const char * header, const char * file, const char * func, int pos, const char *fmt, ...);
@@ -62,3 +64,34 @@ std::string lc_undes(const std::string & strkey, const std::string & s_text);
 
 // sleep
 void lc_sleep(int32_t millionseconds);
+
+// token
+std::vector<std::string> lc_token(const std::string & str, const std::string & token);
+
+// combine
+std::string lc_combine(const std::vector<std::string> & strvec, const std::string & token);
+
+// 发送消息
+std::string lc_send(const std::string & ip, int port, const std::string & msg);
+
+// 回复消息
+void lc_resp(const std::string & ip, int port, const std::string & msgid, const std::string & msg);
+
+// 发送udp消息
+void lc_send_udp(const std::string & ip, int port, const std::string & msg);
+
+// 接收消息
+bool lc_recv(const std::string & msgid, std::string & ret);
+
+// 处理消息
+std::string lc_rpc(const std::string & ip, int port, const std::string & cmd, const std::string & msg);
+
+// 处理消息
+void lc_process();
+
+// 消息回调
+void lc_msg_process(const std::string & ip, int port, const std::string & msg);
+
+// 发送请求好友
+bool lc_send_add(const std::string & ip, int port, const std::string & acc);
+void lc_recv_add(const std::string & ip, int port, const std::string & msgid, const std::string & msg);

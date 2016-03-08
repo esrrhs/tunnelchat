@@ -86,7 +86,7 @@ getMessage( Socket fd, char* buf, int* len,
 
 /// send a UDP message 
 bool 
-sendMessage( Socket fd, char* msg, int len, 
+sendMessage( Socket fd, const char* msg, int len, 
              unsigned int dstIp, unsigned short dstPort,
              bool verbose);
 

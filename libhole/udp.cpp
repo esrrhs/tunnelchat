@@ -180,7 +180,7 @@ getMessage( Socket fd, char* buf, int* len,
 
 
 bool 
-sendMessage( Socket fd, char* buf, int l, 
+sendMessage( Socket fd, const char* buf, int l, 
              unsigned int dstIp, unsigned short dstPort,
              bool verbose)
 {

@@ -1,8 +1,20 @@
 #include "libchat.h"
-#include <string.h> 
+#include <string.h>
 
 CConfigLoader g_CConfigLoader;
 int g_fd = -1;
+struct MsgData
+{
+	std::string ip;
+	int port;
+	std::string msgid;
+	std::string msg;
+	std::string ret;
+	bool isrecv;
+	uint32_t sendtime;
+	uint32_t sendtick;
+};
+std::deque<MsgData> g_MsgData;
 
 void lclog(const char * header, const char * file, const char * func, int pos, const char *fmt, ...)
 {
@@ -431,4 +443,188 @@ void lc_sleep( int32_t millionseconds )
 	usleep(millionseconds * 1000);
 #endif
 }
+
+std::vector<std::string> lc_token( const std::string & str, const std::string & token )
+{
+	std::vector<std::string> ret;
+	std::string tmp = str;
+	char * find = strtok((char*)tmp.c_str(), token.c_str());
+	while (find)
+	{
+		ret.push_back(find);
+		find = strtok(0, token.c_str());
+	}
+	return ret;
+}
+
+std::string lc_combine( const std::vector<std::string> & strvec, const std::string & token )
+{
+	std::string ret;
+	for (int i = 0; i < (int)strvec.size(); i++)
+	{
+		if (i != 0)
+		{
+			ret += token;
+		}
+		ret += strvec[i];
+	}
+	return ret;
+}
+
+std::string lc_send( const std::string & ip, int port, const std::string & msg )
+{
+	std::string msgid = lc_newguid(msg);
+
+	MsgData tmp;
+	tmp.ip = ip;
+	tmp.port = port;
+	tmp.msgid = msgid;
+	tmp.msg = msgid + " " + msg;
+	tmp.isrecv = false;
+	tmp.sendtime = time(0);
+	tmp.sendtick = 0;
+
+	g_MsgData.push_back(tmp);
+
+	return msgid;
+}
+
+void lc_resp( const std::string & ip, int port, const std::string & msgid, const std::string & msg )
+{
+	std::string realmsg = msgid + " res " + msg;
+	lc_send_udp(ip, port, msg);
+}
+
+void lc_send_udp( const std::string & ip, int port, const std::string & msg )
+{
+	unsigned long uip = ntohl(inet_addr(ip.c_str()));
+	sendMessage(g_fd, msg.c_str(), msg.size(), uip, port, false);
+}
+
+bool lc_recv( const std::string & msgid, std::string & ret )
+{
+	for (int i = 0; i < (int)g_MsgData.size(); i++)
+	{
+		if (g_MsgData[i].msgid == msgid)
+		{
+			if (g_MsgData[i].isrecv)
+			{
+				ret = g_MsgData[i].ret;
+			}
+			return true;
+		}
+	}
+	return false;
+}
+
+std::string lc_rpc( const std::string & ip, int port, const std::string & cmd, const std::string & msg )
+{
+	std::string msgid = lc_send(ip, port, cmd + " " + msg);
+	std::string ret;
+	while (lc_recv(msgid, ret))
+	{
+		lc_process();
+	}
+	return ret;
+}
+
+void lc_process()
+{
+	// 重发
+	for (int i = 0; i < (int)g_MsgData.size(); i++)
+	{
+		MsgData & tmp = g_MsgData[i];
+		if (tmp.sendtick % 10 == 0)
+		{
+			lc_send_udp(tmp.ip, tmp.port, tmp.msg);
+			tmp.sendtick++;
+		}
+	}
+
+	// 接收
+	{
+		char data[MAX_MSG_LEN] = {0};
+		unsigned int recvip;
+		unsigned short recvport;
+		int recvlen = sizeof(data);
+		memset(data, 0, sizeof(data));
+		if (getMessage(g_fd, data, &recvlen, &recvip, &recvport, false))
+		{
+			in_addr tmpaddr;
+			*(int*)&tmpaddr = htonl(recvip);
+			lc_msg_process(inet_ntoa(tmpaddr), recvport, data);
+		}
+	}
+
+	// 超时处理
+	uint32_t now = time(0);
+	for (std::deque<MsgData>::iterator i = g_MsgData.begin(); i != g_MsgData.end();)
+	{
+		std::deque<MsgData>::iterator tmpi = i;
+		i++;
+		MsgData & tmp = *tmpi;
+		if (now - tmp.sendtime > 10)
+		{
+			g_MsgData.erase(tmpi);
+		}
+	}
+}
+
+void lc_msg_process( const std::string & ip, int port, const std::string & msg )
+{
+	std::vector<std::string> retvec = lc_token(msg, " ");
+	// key + command + data
+	if (retvec.size() < 3)
+	{
+		return;
+	}
+	std::string msgid = retvec[0];
+	std::string msgcmd = retvec[1];
+	retvec.erase(retvec.begin());
+	retvec.erase(retvec.begin());
+	std::string msgdata = lc_combine(retvec, " ");
+	if (msgcmd == "ans")
+	{
+		for (int i = 0; i < (int)g_MsgData.size(); i++)
+		{
+			if (g_MsgData[i].msgid == msgid && 
+				g_MsgData[i].ip == ip && 
+				g_MsgData[i].port == port)
+			{
+				g_MsgData[i].isrecv = true;
+				g_MsgData[i].ret = msgdata;
+			}
+		}
+	}
+	else if (msgcmd == "add")
+	{
+		lc_recv_add(ip, port, msgid, msgdata);
+	}
+	else
+	{
+		lc_resp(ip, port, msgid, "ok");
+	}
+}
+
+bool lc_send_add( const std::string & ip, int port, const std::string & acc )
+{
+	std::string tmp;
+	tmp += g_CConfigLoader.GetConfig().m_STUser.m_strpwd;
+	tmp += acc;
+	std::string key = lc_md5(tmp.c_str(), tmp.size());
+	std::string ret = lc_rpc(ip, port, "add", key);
+	if (ret.empty())
+	{
+		return false;
+	}
+	return true;
+}
+
+void lc_recv_add( const std::string & ip, int port, const std::string & msgid, const std::string & msg )
+{
+	// TODO 检测本地是否有一个acc了 key是否一致
+
+	lc_resp(ip, port, msgid, "ok");
+}
+
 
