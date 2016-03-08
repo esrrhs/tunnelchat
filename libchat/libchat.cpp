@@ -14,7 +14,7 @@ struct MsgData
 	uint32_t sendtime;
 	uint32_t sendtick;
 };
-std::deque<MsgData> g_MsgData;
+std::vector<MsgData> g_MsgData;
 
 void lclog(const char * header, const char * file, const char * func, int pos, const char *fmt, ...)
 {
@@ -170,6 +170,13 @@ bool lc_chekcp2p()
 		LCERR("stunOpenSocket fd Fail");
 		return false;
 	}
+
+#ifdef WIN32
+	int iMode = 1;//0 == block， 1 == non-block
+	ioctlsocket(g_fd, FIONBIO, (u_long FAR*) &iMode);
+#else
+	fcntl(g_fd, F_SETFL, O_NONBLOCK);
+#endif
 
 	g_CConfigLoader.GetConfig().m_STUser.m_strip = lc_get_stunaddr_ip(mappedAddr);
 	g_CConfigLoader.GetConfig().m_STUser.m_iport = mappedAddr.port;
@@ -529,6 +536,19 @@ std::string lc_rpc( const std::string & ip, int port, const std::string & cmd, c
 	return ret;
 }
 
+struct remove_msgdata
+{
+	bool operator()(const MsgData & tmp)
+	{
+		uint32_t now = time(0);
+		if (now - tmp.sendtime > 10)
+		{
+			return true;
+		}
+		return false;
+	}
+};
+
 void lc_process()
 {
 	// 重发
@@ -549,7 +569,7 @@ void lc_process()
 		unsigned short recvport;
 		int recvlen = sizeof(data);
 		memset(data, 0, sizeof(data));
-		if (getMessage(g_fd, data, &recvlen, &recvip, &recvport, false, MSG_DONTWAIT))
+		if (getMessage(g_fd, data, &recvlen, &recvip, &recvport, false))
 		{
 			in_addr tmpaddr;
 			*(int*)&tmpaddr = htonl(recvip);
@@ -558,17 +578,7 @@ void lc_process()
 	}
 
 	// 超时处理
-	uint32_t now = time(0);
-	for (std::deque<MsgData>::iterator i = g_MsgData.begin(); i != g_MsgData.end();)
-	{
-		std::deque<MsgData>::iterator tmpi = i;
-		i++;
-		MsgData & tmp = *tmpi;
-		if (now - tmp.sendtime > 10)
-		{
-			g_MsgData.erase(tmpi);
-		}
-	}
+	g_MsgData.erase(std::remove_if(g_MsgData.begin(), g_MsgData.end(), remove_msgdata()), g_MsgData.end());
 }
 
 void lc_msg_process( const std::string & ip, int port, const std::string & msg )

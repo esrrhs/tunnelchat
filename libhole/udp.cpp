@@ -113,7 +113,7 @@ openPort( unsigned short port, unsigned int interfaceIp, bool verbose )
 bool 
 getMessage( Socket fd, char* buf, int* len,
             unsigned int* srcIp, unsigned short* srcPort,
-            bool verbose, int flag)
+            bool verbose)
 {
    assert( fd != INVALID_SOCKET );
 	
@@ -126,7 +126,7 @@ getMessage( Socket fd, char* buf, int* len,
    *len = recvfrom(fd,
                    buf,
                    originalSize,
-                   flag,
+                   0,
                    (struct sockaddr *)&from,
                    (socklen_t*)&fromLen);
 	
@@ -142,7 +142,10 @@ getMessage( Socket fd, char* buf, int* len,
          case ECONNRESET:
             cerr << "Error connection reset - host not reachable" <<   endl;
             break;
-				
+			
+		 case EWOULDBLOCK:
+			 break;
+
          default:
             cerr << "Socket Error=" << err << endl;
       }

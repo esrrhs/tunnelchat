@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <deque> 
+#include <algorithm> 
 
 #ifdef _DEBUG
 #define LCLOG(...) lclog("[DEBUG] ", __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);
