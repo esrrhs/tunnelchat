@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommandArguments>add D1E80FEC14E2366DA39E1AC3FA6004414E145ADE45E888B58C0CD156D4C272715750DE78BC9D1CF3B62B0602995E5B6CBBD2543FA89B4A9A</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>add ABF50F976CD38C36383C8C91348D028222C018A94519700E413100C703CC8065751B21A676B1FE58DF6E846E350CBF685C6E166ECD31E8F7</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerWorkingDirectory>../bin</LocalDebuggerWorkingDirectory>
   </PropertyGroup>

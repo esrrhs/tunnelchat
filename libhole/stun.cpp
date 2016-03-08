@@ -2286,8 +2286,12 @@ stunOpenSocket( StunAddress4& dest, StunAddress4* mapAddr,
    stunSendTest(myFd, dest, username, password, 1, 0/*false*/ );
 	
    StunAddress4 from;
-	
-   getMessage( myFd, msg, &msgLen, &from.addr, &from.port,verbose );
+
+   do 
+   {
+	   getMessage( myFd, msg, &msgLen, &from.addr, &from.port,verbose );
+   } 
+   while (!(dest.port == from.port && dest.addr == from.addr));
 	
    StunMessage resp;
    memset(&resp, 0, sizeof(StunMessage));

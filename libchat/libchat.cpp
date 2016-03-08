@@ -499,7 +499,7 @@ std::string lc_send( const std::string & ip, int port, const std::string & msg )
 void lc_resp( const std::string & ip, int port, const std::string & msgid, const std::string & msg )
 {
 	std::string realmsg = msgid + " res " + msg;
-	lc_send_udp(ip, port, msg);
+	lc_send_udp(ip, port, realmsg);
 }
 
 void lc_send_udp( const std::string & ip, int port, const std::string & msg )
@@ -587,6 +587,7 @@ void lc_msg_process( const std::string & ip, int port, const std::string & msg )
 	// key + command + data
 	if (retvec.size() < 3)
 	{
+		assert(0);
 		return;
 	}
 	std::string msgid = retvec[0];
@@ -594,8 +595,8 @@ void lc_msg_process( const std::string & ip, int port, const std::string & msg )
 	retvec.erase(retvec.begin());
 	retvec.erase(retvec.begin());
 	std::string msgdata = lc_combine(retvec, " ");
-	LCLOG("recv %s %d : %s %s %s", ip.c_str(), port, msgid.c_str(), msgcmd.c_str(), msg.c_str());
-	if (msgcmd == "ans")
+	LCLOG("recv %s %d : %s %s %s", ip.c_str(), port, msgid.c_str(), msgcmd.c_str(), msgdata.c_str());
+	if (msgcmd == "res")
 	{
 		for (int i = 0; i < (int)g_MsgData.size(); i++)
 		{
