@@ -18,8 +18,8 @@
 #define ISLOG 0
 #endif
 
-#define MAX_MSG_LEN 512
-#define DES_BUFF_LEN 8
+#define LC_MAX_MSG_LEN 512
+#define LC_DES_BUFF_LEN 8
 
 void lclog(const char * header, const char * file, const char * func, int pos, const char *fmt, ...);
 

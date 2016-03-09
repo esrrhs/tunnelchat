@@ -1,7 +1,7 @@
 #include "libchat.h"
 #include <string.h>
 
-#define MAX_RPC_TIME 10
+#define LC_MAX_RPC_TIME 10
 
 CConfigLoader g_CConfigLoader;
 int g_fd = -1;
@@ -320,9 +320,12 @@ std::string lc_newguid(std::string param)
 	unsigned int ms = lc_getmstick();
 
 	char tmp[256] = {0};
-	sprintf(tmp, "%u_%u_%u_%s_%s", (unsigned int)rand(), t, ms, mac.c_str(), param.c_str());
+	sprintf(tmp, "%u_%u_%u_%s", (unsigned int)rand(), t, ms, mac.c_str());
 	
-	return lc_md5(tmp, strlen(tmp));
+	std::string tmpstr = tmp;
+	tmpstr += "_" + param;
+
+	return lc_md5(tmpstr.c_str(), tmpstr.size());
 }
 
 uint32_t lc_getmstick()
@@ -426,7 +429,7 @@ std::string lc_des( const std::string & strkey, const std::string & s_text )
 {
 	std::string k = lc_md5(strkey.c_str(), strkey.size());
 	std::string v;
-	for (int i = 0; i < (int)s_text.size(); i += DES_BUFF_LEN)
+	for (int i = 0; i < (int)s_text.size(); i += LC_DES_BUFF_LEN)
 	{
 		v += lc_des_str(k, s_text.c_str() + i);
 	}
@@ -438,7 +441,7 @@ std::string lc_undes( const std::string & strkey, const std::string & s_text )
 {
 	std::string k = lc_md5(strkey.c_str(), strkey.size());
 	std::string v;
-	for (int i = 0; i < (int)s_text.size(); i += DES_BUFF_LEN * 2)
+	for (int i = 0; i < (int)s_text.size(); i += LC_DES_BUFF_LEN * 2)
 	{
 		v += lc_undes_str(k, s_text.c_str() + i);
 	}
@@ -520,7 +523,7 @@ void lc_resp( const std::string & ip, int port, const std::string & msgid, const
 
 void lc_send_udp( const std::string & ip, int port, const std::string & msg )
 {
-	assert(msg.size() >= MAX_MSG_LEN);
+	assert(msg.size() >= LC_MAX_MSG_LEN);
 	unsigned long uip = ntohl(inet_addr(ip.c_str()));
 	sendMessage(g_fd, msg.c_str(), msg.size(), uip, port, false);
 	LCLOG("send %s %d : %s", ip.c_str(), port, msg.c_str());
@@ -558,7 +561,7 @@ struct remove_msgdata
 	bool operator()(const MsgData & tmp)
 	{
 		uint32_t now = time(0);
-		if (now - tmp.sendtime > MAX_RPC_TIME)
+		if (now - tmp.sendtime > LC_MAX_RPC_TIME)
 		{
 			return true;
 		}
@@ -581,7 +584,7 @@ void lc_process()
 
 	// Ω” ’
 	{
-		char data[MAX_MSG_LEN] = {0};
+		char data[LC_MAX_MSG_LEN] = {0};
 		unsigned int recvip;
 		unsigned short recvport;
 		int recvlen = sizeof(data);

@@ -395,7 +395,7 @@ typedef struct des_ks_struct
 	} ks;
 } des_key_schedule[16];
 
-int32_t des_set_key(uint8_t (&key)[DES_BUFF_LEN], des_key_schedule schedule)
+int32_t des_set_key(uint8_t (&key)[LC_DES_BUFF_LEN], des_key_schedule schedule)
 {
 	register uint64_t c,d,t,s;
 	register uint8_t *in;
@@ -499,7 +499,7 @@ void des_encrypt(uint64_t *data, des_key_schedule ks, int32_t encrypt)
 	data[1]=r;
 }
 
-void des_ecb_encrypt(uint8_t (&input)[DES_BUFF_LEN], uint8_t (&output)[DES_BUFF_LEN], des_key_schedule ks, int32_t encrypt)
+void des_ecb_encrypt(uint8_t (&input)[LC_DES_BUFF_LEN], uint8_t (&output)[LC_DES_BUFF_LEN], des_key_schedule ks, int32_t encrypt)
 {
 	register uint64_t l;
 	register uint8_t *in,*out;
@@ -515,28 +515,28 @@ void des_ecb_encrypt(uint8_t (&input)[DES_BUFF_LEN], uint8_t (&output)[DES_BUFF_
 	l=ll[0]=ll[1]=0;
 }
 
-void lc_des(const std::string & strkey, const char * s_text, size_t s_len, char (&d_text)[DES_BUFF_LEN])
+void lc_des(const std::string & strkey, const char * s_text, size_t s_len, char (&d_text)[LC_DES_BUFF_LEN])
 {
-    uint8_t key[DES_BUFF_LEN];
+    uint8_t key[LC_DES_BUFF_LEN];
     memset(key, 0, sizeof(key));
-    memcpy(key, strkey.c_str(), std::min<size_t>(strkey.size(), DES_BUFF_LEN));
+    memcpy(key, strkey.c_str(), std::min<size_t>(strkey.size(), LC_DES_BUFF_LEN));
 
-    uint8_t stext[DES_BUFF_LEN];
+    uint8_t stext[LC_DES_BUFF_LEN];
     memset(stext, 0, sizeof(stext));
-    memcpy(stext, s_text, std::min<size_t>(s_len, DES_BUFF_LEN));
+    memcpy(stext, s_text, std::min<size_t>(s_len, LC_DES_BUFF_LEN));
     
 	des_key_schedule sch;
 	des_set_key(key, sch);
-	des_ecb_encrypt(stext, (uint8_t (&)[DES_BUFF_LEN])d_text, &(sch[0]), 1);
+	des_ecb_encrypt(stext, (uint8_t (&)[LC_DES_BUFF_LEN])d_text, &(sch[0]), 1);
 }
 
 std::string lc_des_str(const std::string & strkey, const std::string & s_text)
 {
-	char d_text[DES_BUFF_LEN] = {0};
+	char d_text[LC_DES_BUFF_LEN] = {0};
     lc_des(strkey, s_text.c_str(), s_text.size(), d_text);
 
 	std::string ret;
-	for (int32_t i = 0 ; i < DES_BUFF_LEN; i++ )
+	for (int32_t i = 0 ; i < LC_DES_BUFF_LEN; i++ )
 	{
 		std::string rettmp = lc_itoa16((uint8_t)d_text[i]);
 
@@ -554,26 +554,26 @@ std::string lc_des_str(const std::string & strkey, const std::string & s_text)
     return ret;
 }
 
-void lc_undes(const std::string & strkey, const char * s_text, size_t s_len, char (&d_text)[DES_BUFF_LEN])
+void lc_undes(const std::string & strkey, const char * s_text, size_t s_len, char (&d_text)[LC_DES_BUFF_LEN])
 {
-    uint8_t key[DES_BUFF_LEN] = {0};
+    uint8_t key[LC_DES_BUFF_LEN] = {0};
     memset(key, 0, sizeof(key));
-    memcpy(key, strkey.c_str(), std::min<size_t>(strkey.size(), DES_BUFF_LEN));
+    memcpy(key, strkey.c_str(), std::min<size_t>(strkey.size(), LC_DES_BUFF_LEN));
 
-    uint8_t stext[DES_BUFF_LEN] = {0};
+    uint8_t stext[LC_DES_BUFF_LEN] = {0};
     memset(stext, 0, sizeof(stext));
-    memcpy(stext, s_text, std::min<size_t>(s_len, DES_BUFF_LEN));
+    memcpy(stext, s_text, std::min<size_t>(s_len, LC_DES_BUFF_LEN));
     
 	des_key_schedule sch;
 	des_set_key(key, sch);
-	des_ecb_encrypt(stext, (uint8_t (&)[DES_BUFF_LEN])d_text, &(sch[0]), 0);
+	des_ecb_encrypt(stext, (uint8_t (&)[LC_DES_BUFF_LEN])d_text, &(sch[0]), 0);
 }
 
 std::string lc_undes_str(const std::string & strkey, const std::string & s_text)
 {
-    char stext[DES_BUFF_LEN] = {0};
+    char stext[LC_DES_BUFF_LEN] = {0};
     memset(stext, 0, sizeof(stext));
-    for (int32_t i = 0; i < DES_BUFF_LEN; i++)
+    for (int32_t i = 0; i < LC_DES_BUFF_LEN; i++)
     {
         std::string tmp = s_text.substr(2 * i, 2);
         stext[i] = lc_atoi16(tmp);
@@ -581,11 +581,11 @@ std::string lc_undes_str(const std::string & strkey, const std::string & s_text)
 
 	union
 	{
-		char d_buff[DES_BUFF_LEN + 1];
-		char d_text[DES_BUFF_LEN];
+		char d_buff[LC_DES_BUFF_LEN + 1];
+		char d_text[LC_DES_BUFF_LEN];
 	} dtext;
 	memset(&dtext, 0, sizeof(dtext));
-	lc_undes(strkey, stext, DES_BUFF_LEN, dtext.d_text);
+	lc_undes(strkey, stext, LC_DES_BUFF_LEN, dtext.d_text);
     
 	return std::string(dtext.d_text);
 }
