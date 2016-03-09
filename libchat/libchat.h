@@ -93,6 +93,11 @@ void lc_process();
 // 消息回调
 void lc_msg_process(const std::string & ip, int port, const std::string & msg);
 
+// 获取好友
+CConfigLoader::STConfig::STFriendList::STFriend lc_get_friend(const std::string & acc);
+void lc_set_friend(const CConfigLoader::STConfig::STFriendList::STFriend & f);
+bool lc_is_friend(const std::string & acc);
+
 // 发送请求好友
 bool lc_send_add(const std::string & ip, int port, const std::string & acc);
 void lc_recv_add(const std::string & ip, int port, const std::string & msgid, const std::string & msg);

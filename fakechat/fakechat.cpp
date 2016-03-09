@@ -103,14 +103,14 @@ void add()
 	{
 		printf("info error\n");
 	}
-	if (lc_send_add(param[1], atoi(param[2].c_str()), param[0]))
+	bool b = false;
+	while (!b)
 	{
-		printf("add ok\n");
+		b = lc_send_add(param[1], atoi(param[2].c_str()), param[0]);
+		b &= lc_is_friend(param[0]);
+		printf("try again...\n");
 	}
-	else
-	{
-		printf("add fail\n");
-	}
+	printf("add %s ok\n", lc_get_friend(param[0]).m_strname.c_str());
 }
 
 int main(int argc, char* argv[])
