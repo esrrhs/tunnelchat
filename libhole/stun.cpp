@@ -1843,10 +1843,10 @@ stunTest( StunAddress4& dest, int testNum, bool verbose, StunAddress4* sAddr )
 	
    StunAddress4 from;
    getMessage( myFd,
-               msg,
-               &msgLen,
-               &from.addr,
-               &from.port,verbose );
+		   msg,
+		   &msgLen,
+		   &from.addr,
+		   &from.port,verbose );
 	
    StunMessage resp;
    memset(&resp, 0, sizeof(StunMessage));
@@ -2026,11 +2026,11 @@ stunNatType( StunAddress4& dest,
                   						
                   StunAddress4 from;
 						
-                  getMessage( myFd,
-                              msg,
-                              &msgLen,
-                              &from.addr,
-                              &from.port,verbose );
+				  getMessage( myFd,
+						msg,
+						&msgLen,
+						&from.addr,
+						&from.port,verbose );
 						
                   StunMessage resp;
                   memset(&resp, 0, sizeof(StunMessage));
@@ -2287,11 +2287,7 @@ stunOpenSocket( StunAddress4& dest, StunAddress4* mapAddr,
 	
    StunAddress4 from;
 
-   do 
-   {
-	   getMessage( myFd, msg, &msgLen, &from.addr, &from.port,verbose );
-   } 
-   while (!(dest.port == from.port && dest.addr == from.addr));
+   getMessage( myFd, msg, &msgLen, &from.addr, &from.port,verbose );
 	
    StunMessage resp;
    memset(&resp, 0, sizeof(StunMessage));
@@ -2299,6 +2295,7 @@ stunOpenSocket( StunAddress4& dest, StunAddress4* mapAddr,
    bool ok = stunParseMessage( msg, msgLen, resp,verbose );
    if (!ok)
    {
+	  closesocket(myFd);
       return -1;
    }
 	
@@ -2382,11 +2379,11 @@ stunOpenSocketPair( StunAddress4& dest, StunAddress4* mapAddr,
    for( i=0; i<NUM; i++)
    {
       msgLen = sizeof(msg)/sizeof(*msg);
-      getMessage( fd[i],
-                  msg,
-                  &msgLen,
-                  &from.addr,
-                  &from.port ,verbose);
+	  getMessage( fd[i],
+			msg,
+			&msgLen,
+			&from.addr,
+			&from.port ,verbose);
 		
       StunMessage resp;
       memset(&resp, 0, sizeof(StunMessage));

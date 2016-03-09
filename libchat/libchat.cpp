@@ -164,14 +164,21 @@ bool lc_chekcp2p()
 	}
 
 	StunAddress4 mappedAddr;
-	g_fd = stunOpenSocket(stunServerAddr, &mappedAddr,
-		g_CConfigLoader.GetConfig().m_STUser.m_iport, 0,
-		false);
-
-	if (g_fd == -1)
+	while (1)
 	{
-		LCERR("stunOpenSocket fd Fail");
-		return false;
+		LCLOG("start stunOpenSocket %d", g_CConfigLoader.GetConfig().m_STUser.m_iport);
+		g_fd = stunOpenSocket(stunServerAddr, &mappedAddr,
+			g_CConfigLoader.GetConfig().m_STUser.m_iport, 0,
+			false);
+
+		if (g_fd == -1)
+		{
+			LCERR("stunOpenSocket fd Fail");
+		}
+		else
+		{
+			break;
+		}
 	}
 
 #ifdef WIN32
@@ -523,7 +530,7 @@ void lc_resp( const std::string & ip, int port, const std::string & msgid, const
 
 void lc_send_udp( const std::string & ip, int port, const std::string & msg )
 {
-	assert(msg.size() >= LC_MAX_MSG_LEN);
+	assert(msg.size() < LC_MAX_MSG_LEN);
 	unsigned long uip = ntohl(inet_addr(ip.c_str()));
 	sendMessage(g_fd, msg.c_str(), msg.size(), uip, port, false);
 	LCLOG("send %s %d : %s", ip.c_str(), port, msg.c_str());
@@ -679,6 +686,7 @@ void lc_recv_add( const std::string & ip, int port, const std::string & msgid, c
 	std::vector<std::string> msgvec = lc_token(smsg, " ");
 	if (msgvec.size() < 4)
 	{
+		LCERR("error param %s", smsg.c_str());
 		assert(0);
 		return;
 	}
