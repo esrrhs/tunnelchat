@@ -125,8 +125,10 @@ bool lc_chekcp2p()
 			continue;
 		}
 
+		LCERR("start get type");
+
 		stype = stunNatType( stunServerAddr, false, 0, 0, 
-			g_CConfigLoader.GetConfig().m_STUser.m_iport, 0);
+			0, 0);
 
 		if (stype == StunTypeOpen || 
 			stype == StunTypeIndependentFilter || 
@@ -137,15 +139,14 @@ bool lc_chekcp2p()
 		}
 		else
 		{
+			LCERR("type %d", stype);
 			if (trytime < 10)
 			{
-				// 有可能端口被别人占用了，换个
-				g_CConfigLoader.GetConfig().m_STUser.m_iport = lc_randport();
-
+				// 换个
 				i--;
 				trytime++;
-
 				lc_sleep(100);
+				LCERR("change port tyy again");
 			}
 		}
 	}
@@ -166,19 +167,24 @@ bool lc_chekcp2p()
 	StunAddress4 mappedAddr;
 	while (1)
 	{
-		LCLOG("start stunOpenSocket %d", g_CConfigLoader.GetConfig().m_STUser.m_iport);
-		g_fd = stunOpenSocket(stunServerAddr, &mappedAddr,
-			g_CConfigLoader.GetConfig().m_STUser.m_iport, 0,
+		LCLOG("start stunOpenSocket");
+		int fd = stunOpenSocket(stunServerAddr, &mappedAddr,
+			0, 0,
 			false);
 
-		if (g_fd == -1)
+		if (fd != -1)
 		{
-			LCERR("stunOpenSocket fd Fail");
-		}
-		else
-		{
+			LCLOG("stunOpenSocket ok");
+			closesocket(fd);
 			break;
 		}
+	}
+
+	g_fd = openPort(g_CConfigLoader.GetConfig().m_STUser.m_iport, 0, false);
+	if (g_fd == -1)
+	{
+		LCERR("openPort fail");
+		return false;
 	}
 
 #ifdef WIN32
@@ -189,9 +195,8 @@ bool lc_chekcp2p()
 #endif
 
 	g_CConfigLoader.GetConfig().m_STUser.m_strip = lc_get_stunaddr_ip(mappedAddr);
-	g_CConfigLoader.GetConfig().m_STUser.m_iport = mappedAddr.port;
 
-	LCLOG("stunOpenSocket OK %s %d %d", g_CConfigLoader.GetConfig().m_STUser.m_strip.c_str(), 
+	LCLOG("Open P2P Socket OK %s %d %d", g_CConfigLoader.GetConfig().m_STUser.m_strip.c_str(), 
 		g_CConfigLoader.GetConfig().m_STUser.m_iport,
 		g_fd);
 
@@ -721,7 +726,7 @@ void lc_recv_add( const std::string & ip, int port, const std::string & msgid, c
 	f.m_strname = name;
 	lc_set_friend(f);
 
-	LCLOG("lc_recv_add %s %d %s %s", ip, port, msgid.c_str(), msg.c_str());
+	LCLOG("lc_recv_add %s %d %s %s", ip.c_str(), port, acc.c_str(), name.c_str());
 }
 
 CConfigLoader::STConfig::STFriendList::STFriend lc_get_friend( const std::string & acc )
@@ -740,6 +745,14 @@ CConfigLoader::STConfig::STFriendList::STFriend lc_get_friend( const std::string
 
 void lc_set_friend( const CConfigLoader::STConfig::STFriendList::STFriend & f )
 {
+	for (int i = 0; i < (int)g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend.size(); i++)
+	{
+		if (g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend[i].m_stracc == f.m_stracc)
+		{
+			g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend[i] = f;
+			return;
+		}
+	}
 	g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend.push_back(f);
 }
 

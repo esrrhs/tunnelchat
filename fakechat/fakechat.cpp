@@ -97,6 +97,11 @@ void info()
 
 void add()
 {
+	if (g_CConfigLoader.GetConfig().m_STUser.m_stracc.empty())
+	{
+		printf("plese create first, use [new] command\n");
+		return;
+	}
 	std::string info = lc_undes("fakechat", g_cmd_param1);
 	std::vector<std::string> param = lc_token(info, " ");
 	if (param.size() < 3)
