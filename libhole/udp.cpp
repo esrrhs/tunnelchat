@@ -221,6 +221,7 @@ sendMessage( Socket fd, const char* buf, int l,
          case ECONNREFUSED:
          case EHOSTDOWN:
          case EHOSTUNREACH:
+		 case EWOULDBLOCK:
          {
             // quietly ignore this 
          }

@@ -110,6 +110,8 @@ public:
 				
 				m_strpwd.clear();
 				
+				m_itryport = 0;
+				
 			}
 			
 			std::string m_stracc;
@@ -121,6 +123,8 @@ public:
 			int32_t m_iport;
 			
 			std::string m_strpwd;
+			
+			int32_t m_itryport;
 			
 
 		};
@@ -237,6 +241,9 @@ public:
 			tmpUser.m_strpwd = ((TiXmlElement *)pUser)->Attribute("pwd");
 			LCLOG("		pwd %s", tmpUser.m_strpwd.c_str());
 			
+			((TiXmlElement *)pUser)->Attribute("tryport", &tmpUser.m_itryport);
+			LCLOG("		tryport %d", tmpUser.m_itryport);
+			
 			
 
 			m_STConfig.m_STUser = tmpUser;
@@ -342,6 +349,9 @@ public:
 			
 			tmpXmlUser.SetAttribute("pwd", tmpUser.m_strpwd.c_str());
 			LCLOG("		pwd %s", tmpUser.m_strpwd.c_str());
+			
+			tmpXmlUser.SetAttribute("tryport", tmpUser.m_itryport);
+			LCLOG("		tryport %d", tmpUser.m_itryport);
 			
 			
 			pFather->InsertEndChild(tmpXmlUser);

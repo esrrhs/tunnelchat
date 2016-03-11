@@ -4,7 +4,9 @@
 CConfigLoader g_CConfigLoader;
 int g_fd = -1;
 lc_on_recv_chat g_cb_on_recv_chat = 0;
-int g_hb_count = 0;
+uint32_t g_sync_count = 0;
+uint32_t g_hb_count = 0;
+uint32_t g_resend_count = 0;
 
 struct MsgData
 {
@@ -97,6 +99,7 @@ bool lc_ini()
 		}
 
 		g_CConfigLoader.GetConfig().m_STUser.m_iport = lc_randport();
+		g_CConfigLoader.GetConfig().m_STUser.m_itryport = lc_randtryport();
 	}
 
 	// 开始查看局域网
@@ -125,10 +128,10 @@ bool lc_chekcp2p()
 			continue;
 		}
 
-		LCERR("start get type");
+		LCERR("start get type port %d", g_CConfigLoader.GetConfig().m_STUser.m_itryport);
 
 		stype = stunNatType( stunServerAddr, false, 0, 0, 
-			0, 0);
+			g_CConfigLoader.GetConfig().m_STUser.m_itryport, 0);
 
 		if (stype == StunTypeOpen || 
 			stype == StunTypeIndependentFilter || 
@@ -139,14 +142,16 @@ bool lc_chekcp2p()
 		}
 		else
 		{
-			LCERR("type %d", stype);
+			LCERR("type %d port %d", stype, g_CConfigLoader.GetConfig().m_STUser.m_itryport);
 			if (trytime < 10)
 			{
 				// 换个
 				i--;
 				trytime++;
 				lc_sleep(100);
-				LCERR("change port tyy again");
+
+				g_CConfigLoader.GetConfig().m_STUser.m_itryport = lc_randtryport();
+				LCERR("change port try again port %d", g_CConfigLoader.GetConfig().m_STUser.m_itryport);
 			}
 		}
 	}
@@ -156,25 +161,25 @@ bool lc_chekcp2p()
 		stype == StunTypeDependentFilter || 
 		stype == StunTypePortDependedFilter)
 	{
-		LCLOG("stunNatType %d", stype);
+		LCLOG("stunNatType %d port %d", stype, g_CConfigLoader.GetConfig().m_STUser.m_itryport);
 	}
 	else
 	{
-		LCERR("stunNatType Not Support Fail %d", stype);
+		LCERR("stunNatType Not Support Fail %d port %d", stype, g_CConfigLoader.GetConfig().m_STUser.m_itryport);
 		return false;
 	}
 
 	StunAddress4 mappedAddr;
 	while (1)
 	{
-		LCLOG("start stunOpenSocket");
+		LCLOG("start stunOpenSocket %d", g_CConfigLoader.GetConfig().m_STUser.m_itryport);
 		int fd = stunOpenSocket(stunServerAddr, &mappedAddr,
-			0, 0,
+			g_CConfigLoader.GetConfig().m_STUser.m_itryport, 0,
 			false);
 
 		if (fd != -1)
 		{
-			LCLOG("stunOpenSocket ok");
+			LCLOG("stunOpenSocket ok port %d", g_CConfigLoader.GetConfig().m_STUser.m_itryport);
 			closesocket(fd);
 			break;
 		}
@@ -373,6 +378,11 @@ std::string lc_get_stunaddr_ip( StunAddress4 addr )
 int lc_randport()
 {
 	return 50000 + rand() % 10000;
+}
+
+int lc_randtryport()
+{
+	return 40000 + rand() % 10000;
 }
 
 int lc_atoi16( const std::string & str )
@@ -578,30 +588,31 @@ struct remove_msgdata
 
 void lc_process()
 {
+	uint32_t now = time(0);
 	// 定时更新信息
-	if (g_hb_count % LC_SYNC_TIME == 0)
+	if (now - g_sync_count > LC_SYNC_TIME)
 	{
 		for (int i = 0; i < (int)g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend.size(); i++)
 		{
 			CConfigLoader::STConfig::STFriendList::STFriend & tmp = g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend[i];
 			lc_send_sync(tmp.m_strip, tmp.m_iport, tmp.m_stracc);
 		}
-		g_hb_count++;
+		g_sync_count = now;
 	}
 
 	// 心跳
-	if (g_hb_count % LC_HB_TIME == 0)
+	if (now - g_hb_count > LC_HB_TIME)
 	{
 		for (int i = 0; i < (int)g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend.size(); i++)
 		{
 			CConfigLoader::STConfig::STFriendList::STFriend & tmp = g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend[i];
 			lc_send_udp(tmp.m_strip, tmp.m_iport, "hb");
 		}
-		g_hb_count++;
+		g_sync_count = now;
 	}
 
 	// 重发
-	if (g_hb_count % LC_RESEND_TIME == 0)
+	if (now - g_resend_count > LC_RESEND_TIME)
 	{
 		for (int i = 0; i < (int)g_MsgData.size(); i++)
 		{
@@ -611,6 +622,7 @@ void lc_process()
 				lc_send_udp(tmp.ip, tmp.port, tmp.msg);
 			}
 		}
+		g_resend_count = now;
 	}
 
 	// 接收
@@ -630,8 +642,6 @@ void lc_process()
 
 	// 超时处理
 	g_MsgData.erase(std::remove_if(g_MsgData.begin(), g_MsgData.end(), remove_msgdata()), g_MsgData.end());
-
-	g_hb_count++;
 }
 
 void lc_msg_process( const std::string & ip, int port, const std::string & msg )

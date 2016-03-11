@@ -27,14 +27,14 @@
 // RPC超时时间
 #define LC_MAX_RPC_TIME 10
 
-// 同步信息发送间隔帧
-#define LC_SYNC_TIME 1000
+// 同步信息发送间隔时间
+#define LC_SYNC_TIME 60
 
-// 心跳包发送间隔帧
-#define LC_HB_TIME 100
+// 心跳包发送间隔时间
+#define LC_HB_TIME 1
 
-// 消息包重发间隔帧
-#define LC_RESEND_TIME 10
+// 消息包重发间隔时间
+#define LC_RESEND_TIME 1
 
 typedef void(*lc_on_recv_chat)(const char * acc, const char * words);
 
@@ -71,6 +71,7 @@ std::string lc_get_stunaddr_ip(StunAddress4 addr);
 
 // 随机端口
 int lc_randport();
+int lc_randtryport();
 
 // 16进制转换
 int lc_atoi16(const std::string & str);
