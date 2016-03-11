@@ -31,7 +31,7 @@
 #define LC_SYNC_TIME 1000
 
 // 心跳包发送间隔帧
-#define LC_HB_TIME 10
+#define LC_HB_TIME 100
 
 // 消息包重发间隔帧
 #define LC_RESEND_TIME 10

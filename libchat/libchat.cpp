@@ -530,7 +530,10 @@ void lc_send_udp( const std::string & ip, int port, const std::string & msg )
 	assert(msg.size() < LC_MAX_MSG_LEN);
 	unsigned long uip = ntohl(inet_addr(ip.c_str()));
 	sendMessage(g_fd, msg.c_str(), msg.size(), uip, port, false);
-	LCLOG("send %s %d : %s", ip.c_str(), port, msg.c_str());
+	if (msg != "hb")
+	{
+		LCLOG("send %s %d : %s", ip.c_str(), port, msg.c_str());
+	}
 }
 
 bool lc_recv( const std::string & msgid, std::string & ret )
@@ -939,8 +942,7 @@ void lc_recv_sync( const std::string & ip, int port, const std::string & msg )
 	CConfigLoader::STConfig::STFriendList::STFriend f = lc_get_friend(acc);
 	if (f.m_stracc.empty())
 	{
-		LCERR("no friend %s", acc.c_str());
-		assert(0);
+		LCLOG("no friend %s", acc.c_str());
 		return;
 	}
 
