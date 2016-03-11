@@ -1,8 +1,8 @@
 <Config>
     <FriendList>
-        <Friend acc="aa" ip="aa" key="aa" name="aa" port="0" />
-        <Friend acc="aa" ip="aa" key="aa" name="aa" port="0" />
-        <Friend acc="aa" ip="aa" key="aa" name="aa" port="0" />
+        <Friend acc="aa" ip="aa" skey="aa" rkey="bb" name="aa" port="0" />
+        <Friend acc="aa" ip="aa" skey="aa" rkey="bb" name="aa" port="0" />
+        <Friend acc="aa" ip="aa" skey="aa" rkey="bb" name="aa" port="0" />
     </FriendList>
     <STUNServer>
         <STUN ip="stun.schlund.de" />

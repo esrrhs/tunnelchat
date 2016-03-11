@@ -18,8 +18,25 @@
 #define ISLOG 0
 #endif
 
+// 消息包最大长度
 #define LC_MAX_MSG_LEN 512
+
+// des buff
 #define LC_DES_BUFF_LEN 8
+
+// RPC超时时间
+#define LC_MAX_RPC_TIME 10
+
+// 同步信息发送间隔帧
+#define LC_SYNC_TIME 1000
+
+// 心跳包发送间隔帧
+#define LC_HB_TIME 10
+
+// 消息包重发间隔帧
+#define LC_RESEND_TIME 10
+
+typedef void(*lc_on_recv_chat)(const char * acc, const char * words);
 
 void lclog(const char * header, const char * file, const char * func, int pos, const char *fmt, ...);
 
@@ -97,7 +114,23 @@ void lc_msg_process(const std::string & ip, int port, const std::string & msg);
 CConfigLoader::STConfig::STFriendList::STFriend lc_get_friend(const std::string & acc);
 void lc_set_friend(const CConfigLoader::STConfig::STFriendList::STFriend & f);
 bool lc_is_friend(const std::string & acc);
+CConfigLoader::STConfig::STFriendList::STFriend lc_get_friend_by_name(const std::string & name);
+void lc_set_friend_skey(const std::string & acc, const std::string & key);
+
+// 生成好友之间的key
+std::string lc_make_friend_key(const std::string & acc);
 
 // 发送请求好友
-bool lc_send_add(const std::string & ip, int port, const std::string & acc);
-void lc_recv_add(const std::string & ip, int port, const std::string & msgid, const std::string & msg);
+bool lc_rpc_add(const std::string & ip, int port, const std::string & acc, const std::string & key);
+void lc_on_rpc_add(const std::string & ip, int port, const std::string & msgid, const std::string & msg);
+
+// 聊天
+bool lc_rpc_chat(const std::string & ip, int port, const std::string & acc, const std::string & words);
+void lc_on_rpc_chat(const std::string & ip, int port, const std::string & msgid, const std::string & msg);
+
+// 设置聊天回调
+void lc_set_chat_cb(lc_on_recv_chat cb);
+
+// 同步信息
+void lc_send_sync(const std::string & ip, int port, const std::string & acc);
+void lc_recv_sync(const std::string & ip, int port, const std::string & msg);

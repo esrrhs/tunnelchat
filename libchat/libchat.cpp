@@ -1,10 +1,11 @@
 #include "libchat.h"
 #include <string.h>
 
-#define LC_MAX_RPC_TIME 10
-
 CConfigLoader g_CConfigLoader;
 int g_fd = -1;
+lc_on_recv_chat g_cb_on_recv_chat = 0;
+int g_hb_count = 0;
+
 struct MsgData
 {
 	std::string ip;
@@ -14,7 +15,6 @@ struct MsgData
 	std::string ret;
 	bool isrecv;
 	uint32_t sendtime;
-	uint32_t sendtick;
 	bool iscache;
 };
 std::vector<MsgData> g_MsgData;
@@ -358,15 +358,6 @@ uint32_t lc_getmstick()
 
 void lc_newuser( std::string name, std::string pwd )
 {
-	if (!g_CConfigLoader.GetConfig().m_STUser.m_stracc.empty())
-	{
-		printf("already have user %s, overwrite? y/n\n", g_CConfigLoader.GetConfig().m_STUser.m_stracc.c_str());
-		if (getchar() != 'y')
-		{
-			return;
-		}
-	}
-
 	g_CConfigLoader.GetConfig().m_STUser.m_stracc = lc_newguid(name);
 	g_CConfigLoader.GetConfig().m_STUser.m_strpwd = lc_newguid(pwd);
 	g_CConfigLoader.GetConfig().m_STUser.m_strname = name;
@@ -500,15 +491,17 @@ std::string lc_send( const std::string & ip, int port, const std::string & msg )
 {
 	std::string msgid = lc_newguid(msg);
 
+	std::string realmsg = msgid + " " + msg;
+	lc_send_udp(ip, port, realmsg);
+
 	MsgData tmp;
 	tmp.ip = ip;
 	tmp.port = port;
 	tmp.msgid = msgid;
-	tmp.msg = msgid + " " + msg;
+	tmp.msg = realmsg;
 	tmp.isrecv = false;
 	tmp.iscache = false;
 	tmp.sendtime = time(0);
-	tmp.sendtick = 0;
 
 	g_MsgData.push_back(tmp);
 
@@ -528,7 +521,6 @@ void lc_resp( const std::string & ip, int port, const std::string & msgid, const
 	tmp.isrecv = false;
 	tmp.iscache = true;
 	tmp.sendtime = time(0);
-	tmp.sendtick = 0;
 
 	g_MsgData.push_back(tmp);
 }
@@ -583,14 +575,38 @@ struct remove_msgdata
 
 void lc_process()
 {
-	// 重发
-	for (int i = 0; i < (int)g_MsgData.size(); i++)
+	// 定时更新信息
+	if (g_hb_count % LC_SYNC_TIME == 0)
 	{
-		MsgData & tmp = g_MsgData[i];
-		if (!tmp.iscache && tmp.sendtick % 10 == 0)
+		for (int i = 0; i < (int)g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend.size(); i++)
 		{
-			lc_send_udp(tmp.ip, tmp.port, tmp.msg);
-			tmp.sendtick++;
+			CConfigLoader::STConfig::STFriendList::STFriend & tmp = g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend[i];
+			lc_send_sync(tmp.m_strip, tmp.m_iport, tmp.m_stracc);
+		}
+		g_hb_count++;
+	}
+
+	// 心跳
+	if (g_hb_count % LC_HB_TIME == 0)
+	{
+		for (int i = 0; i < (int)g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend.size(); i++)
+		{
+			CConfigLoader::STConfig::STFriendList::STFriend & tmp = g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend[i];
+			lc_send_udp(tmp.m_strip, tmp.m_iport, "hb");
+		}
+		g_hb_count++;
+	}
+
+	// 重发
+	if (g_hb_count % LC_RESEND_TIME == 0)
+	{
+		for (int i = 0; i < (int)g_MsgData.size(); i++)
+		{
+			MsgData & tmp = g_MsgData[i];
+			if (!tmp.iscache)
+			{
+				lc_send_udp(tmp.ip, tmp.port, tmp.msg);
+			}
 		}
 	}
 
@@ -611,10 +627,16 @@ void lc_process()
 
 	// 超时处理
 	g_MsgData.erase(std::remove_if(g_MsgData.begin(), g_MsgData.end(), remove_msgdata()), g_MsgData.end());
+
+	g_hb_count++;
 }
 
 void lc_msg_process( const std::string & ip, int port, const std::string & msg )
 {
+	if (msg == "hb")
+	{
+		return;
+	}
 	std::vector<std::string> retvec = lc_token(msg, " ");
 	// key + command + data
 	if (retvec.size() < 3)
@@ -657,76 +679,21 @@ void lc_msg_process( const std::string & ip, int port, const std::string & msg )
 
 		if (msgcmd == "add")
 		{
-			lc_recv_add(ip, port, msgid, msgdata);
+			lc_on_rpc_add(ip, port, msgid, msgdata);
+		}
+		else if (msgcmd == "chat")
+		{
+			lc_on_rpc_chat(ip, port, msgid, msgdata);
+		}
+		else if (msgcmd == "sync")
+		{
+			lc_recv_sync(ip, port, msgdata);
 		}
 		else
 		{
 			lc_resp(ip, port, msgid, "ok");
 		}
 	}
-}
-
-bool lc_send_add( const std::string & ip, int port, const std::string & acc )
-{
-	std::string tmp;
-	tmp += g_CConfigLoader.GetConfig().m_STUser.m_strpwd;
-	tmp += acc;
-	std::string key = lc_md5(tmp.c_str(), tmp.size());
-	std::string msg = g_CConfigLoader.GetConfig().m_STUser.m_stracc;
-	msg += " " + g_CConfigLoader.GetConfig().m_STUser.m_strname;
-	msg += " " + key;
-	msg += " " + acc;
-	std::string emsg = lc_des("add", msg);
-	std::string ret = lc_rpc(ip, port, "add", emsg);
-	if (ret != "ok")
-	{
-		return false;
-	}
-	return true;
-}
-
-void lc_recv_add( const std::string & ip, int port, const std::string & msgid, const std::string & msg )
-{
-	std::string smsg = lc_undes("add", msg);
-	std::vector<std::string> msgvec = lc_token(smsg, " ");
-	if (msgvec.size() < 4)
-	{
-		LCERR("error param %s", smsg.c_str());
-		assert(0);
-		return;
-	}
-
-	std::string acc = msgvec[0];
-	std::string name = msgvec[1];
-	std::string key = msgvec[2];
-	std::string wantacc = msgvec[3];
-
-	if (wantacc != g_CConfigLoader.GetConfig().m_STUser.m_stracc)
-	{
-		LCERR("diff acc %s %s", wantacc.c_str(), g_CConfigLoader.GetConfig().m_STUser.m_stracc.c_str());
-		assert(0);
-		return;
-	}
-
-	CConfigLoader::STConfig::STFriendList::STFriend f = lc_get_friend(acc);
-	// 检测本地是否有一个acc了 key是否一致
-	if (f.m_stracc == acc && f.m_strkey != key)
-	{
-		LCERR("diff key %s %s %s", acc.c_str(), f.m_strkey.c_str(), key.c_str());
-		assert(0);
-		return;
-	}
-
-	lc_resp(ip, port, msgid, "ok");
-
-	f.m_iport = port;
-	f.m_strip = ip;
-	f.m_stracc = acc;
-	f.m_strkey = key;
-	f.m_strname = name;
-	lc_set_friend(f);
-
-	LCLOG("lc_recv_add %s %d %s %s", ip.c_str(), port, acc.c_str(), name.c_str());
 }
 
 CConfigLoader::STConfig::STFriendList::STFriend lc_get_friend( const std::string & acc )
@@ -759,4 +726,240 @@ void lc_set_friend( const CConfigLoader::STConfig::STFriendList::STFriend & f )
 bool lc_is_friend( const std::string & acc )
 {
 	return !lc_get_friend(acc).m_stracc.empty();
+}
+
+CConfigLoader::STConfig::STFriendList::STFriend lc_get_friend_by_name( const std::string & name )
+{
+	CConfigLoader::STConfig::STFriendList::STFriend tmp;
+	for (int i = 0; i < (int)g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend.size(); i++)
+	{
+		if (g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend[i].m_strname == name)
+		{
+			tmp = g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend[i];
+			break;
+		}
+	}
+	return tmp;
+}
+
+void lc_set_friend_skey( const std::string & acc, const std::string & key )
+{
+	for (int i = 0; i < (int)g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend.size(); i++)
+	{
+		if (g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend[i].m_stracc == acc)
+		{
+			g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend[i].m_strskey = key;
+			return;
+		}
+	}
+}
+
+std::string lc_make_friend_key( const std::string & acc )
+{
+	std::string tmp;
+	tmp += g_CConfigLoader.GetConfig().m_STUser.m_strpwd;
+	tmp += acc;
+	std::string key = lc_md5(tmp.c_str(), tmp.size());
+	return key;
+}
+
+bool lc_rpc_add( const std::string & ip, int port, const std::string & acc, const std::string & key )
+{
+	std::string msg = g_CConfigLoader.GetConfig().m_STUser.m_stracc;
+	msg += " " + g_CConfigLoader.GetConfig().m_STUser.m_strname;
+	msg += " " + key;
+	msg += " " + acc;
+	std::string emsg = lc_des("add", msg);
+	std::string ret = lc_rpc(ip, port, "add", emsg);
+	if (ret != "ok")
+	{
+		return false;
+	}
+	return true;
+}
+
+void lc_on_rpc_add( const std::string & ip, int port, const std::string & msgid, const std::string & msg )
+{
+	std::string smsg = lc_undes("add", msg);
+	std::vector<std::string> msgvec = lc_token(smsg, " ");
+	if (msgvec.size() < 4)
+	{
+		LCERR("error param %s", smsg.c_str());
+		assert(0);
+		return;
+	}
+
+	std::string acc = msgvec[0];
+	std::string name = msgvec[1];
+	std::string key = msgvec[2];
+	std::string wantacc = msgvec[3];
+
+	if (wantacc != g_CConfigLoader.GetConfig().m_STUser.m_stracc)
+	{
+		LCERR("diff acc %s %s", wantacc.c_str(), g_CConfigLoader.GetConfig().m_STUser.m_stracc.c_str());
+		assert(0);
+		return;
+	}
+
+	CConfigLoader::STConfig::STFriendList::STFriend f = lc_get_friend(acc);
+	// 检测本地是否有一个acc了 key是否一致
+	if (f.m_stracc == acc && f.m_strrkey != key)
+	{
+		LCERR("diff key %s %s %s", acc.c_str(), f.m_strrkey.c_str(), key.c_str());
+		assert(0);
+		return;
+	}
+
+	lc_resp(ip, port, msgid, "ok");
+
+	f.m_iport = port;
+	f.m_strip = ip;
+	f.m_stracc = acc;
+	f.m_strrkey = key;
+	f.m_strname = name;
+	lc_set_friend(f);
+
+	LCLOG("lc_recv_add %s %d %s %s", ip.c_str(), port, acc.c_str(), name.c_str());
+}
+
+bool lc_rpc_chat( const std::string & ip, int port, const std::string & acc, const std::string & words )
+{
+	CConfigLoader::STConfig::STFriendList::STFriend f = lc_get_friend(acc);
+	if (f.m_stracc.empty())
+	{
+		LCERR("chat no friend %s %s", acc.c_str(), words.c_str());
+		assert(0);
+		return false;
+	}
+
+	std::string key = f.m_strskey;
+	std::string ewords = lc_des(key, words);
+
+	std::string msg = g_CConfigLoader.GetConfig().m_STUser.m_stracc;
+	msg += " " + ewords;
+	std::string emsg = lc_des("chat", msg);
+
+	std::string ret = lc_rpc(ip, port, "chat", emsg);
+	if (ret != "ok")
+	{
+		return false;
+	}
+	return true;
+}
+
+void lc_on_rpc_chat( const std::string & ip, int port, const std::string & msgid, const std::string & msg )
+{
+	std::string smsg = lc_undes("chat", msg);
+	std::vector<std::string> msgvec = lc_token(smsg, " ");
+	if (msgvec.size() < 2)
+	{
+		LCERR("error param %s", smsg.c_str());
+		assert(0);
+		return;
+	}
+
+	std::string acc = msgvec[0];
+	std::string words = msgvec[1];
+	CConfigLoader::STConfig::STFriendList::STFriend f = lc_get_friend(acc);
+	if (f.m_stracc.empty())
+	{
+		LCERR("chat no friend %s %s", acc.c_str(), words.c_str());
+		assert(0);
+		return;
+	}
+
+	if (!g_cb_on_recv_chat)
+	{
+		LCERR("no chat callback %s %s", acc.c_str(), words.c_str());
+		assert(0);
+		return;
+	}
+
+	std::string swords = lc_undes(f.m_strrkey, words);
+
+	lc_resp(ip, port, msgid, "ok");
+
+	g_cb_on_recv_chat(acc.c_str(), swords.c_str());
+
+	LCLOG("chat from %s %s", acc.c_str(), swords.c_str());
+}
+
+void lc_set_chat_cb( lc_on_recv_chat cb )
+{
+	g_cb_on_recv_chat = cb;
+}
+
+void lc_send_sync( const std::string & ip, int port, const std::string & acc )
+{
+	if (g_CConfigLoader.GetConfig().m_STUser.m_stracc.empty())
+	{
+		return;
+	}
+
+	CConfigLoader::STConfig::STFriendList::STFriend f = lc_get_friend(acc);
+	if (f.m_stracc.empty())
+	{
+		LCERR("no friend %s", acc.c_str());
+		assert(0);
+		return;
+	}
+
+	char buff[100];
+	sprintf(buff, "%s %d %s", g_CConfigLoader.GetConfig().m_STUser.m_strip.c_str(), 
+		g_CConfigLoader.GetConfig().m_STUser.m_iport,
+		g_CConfigLoader.GetConfig().m_STUser.m_strname.c_str());
+
+	std::string info = buff;
+
+	std::string key = f.m_strskey;
+	std::string einfo = lc_des(key, info);
+
+	std::string msg = g_CConfigLoader.GetConfig().m_STUser.m_stracc;
+	msg += " " + einfo;
+
+	std::string emsg = lc_des("sync", msg);
+	emsg = "0 sync " + emsg;
+
+	lc_send_udp(ip, port, emsg);
+}
+
+void lc_recv_sync( const std::string & ip, int port, const std::string & msg )
+{
+	std::string smsg = lc_undes("sync", msg);
+	std::vector<std::string> msgvec = lc_token(smsg, " ");
+	if (msgvec.size() < 2)
+	{
+		LCERR("error param %s", smsg.c_str());
+		assert(0);
+		return;
+	}
+
+	std::string acc = msgvec[0];
+	std::string info = msgvec[1];
+	CConfigLoader::STConfig::STFriendList::STFriend f = lc_get_friend(acc);
+	if (f.m_stracc.empty())
+	{
+		LCERR("no friend %s", acc.c_str());
+		assert(0);
+		return;
+	}
+
+	std::string sinfo = lc_undes(f.m_strrkey, info);
+	std::vector<std::string> infovec = lc_token(sinfo, " ");
+	if (infovec.size() < 3)
+	{
+		LCERR("error param %s", smsg.c_str());
+		assert(0);
+		return;
+	}
+
+	std::string sip = infovec[0];
+	int sport = atoi(infovec[1].c_str());
+	std::string sname = infovec[2];
+
+	f.m_iport = sport;
+	f.m_strip = sip;
+	f.m_strname = sname;
+
+	LCLOG("sync from %s %s %d", sname.c_str(), sip.c_str(), sport);
 }

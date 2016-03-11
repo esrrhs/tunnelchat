@@ -37,11 +37,13 @@ public:
 					
 					m_strip.clear();
 					
-					m_strkey.clear();
-					
 					m_strname.clear();
 					
 					m_iport = 0;
+					
+					m_strrkey.clear();
+					
+					m_strskey.clear();
 					
 				}
 				
@@ -49,11 +51,13 @@ public:
 				
 				std::string m_strip;
 				
-				std::string m_strkey;
-				
 				std::string m_strname;
 				
 				int32_t m_iport;
+				
+				std::string m_strrkey;
+				
+				std::string m_strskey;
 				
 
 			};
@@ -171,14 +175,17 @@ public:
 				tmpFriend.m_strip = ((TiXmlElement *)pFriend)->Attribute("ip");
 				LCLOG("			ip %s", tmpFriend.m_strip.c_str());
 				
-				tmpFriend.m_strkey = ((TiXmlElement *)pFriend)->Attribute("key");
-				LCLOG("			key %s", tmpFriend.m_strkey.c_str());
-				
 				tmpFriend.m_strname = ((TiXmlElement *)pFriend)->Attribute("name");
 				LCLOG("			name %s", tmpFriend.m_strname.c_str());
 				
 				((TiXmlElement *)pFriend)->Attribute("port", &tmpFriend.m_iport);
 				LCLOG("			port %d", tmpFriend.m_iport);
+				
+				tmpFriend.m_strrkey = ((TiXmlElement *)pFriend)->Attribute("rkey");
+				LCLOG("			rkey %s", tmpFriend.m_strrkey.c_str());
+				
+				tmpFriend.m_strskey = ((TiXmlElement *)pFriend)->Attribute("skey");
+				LCLOG("			skey %s", tmpFriend.m_strskey.c_str());
 				
 				
 
@@ -268,14 +275,17 @@ public:
 				tmpXmlFriend.SetAttribute("ip", tmpFriend.m_strip.c_str());
 				LCLOG("			ip %s", tmpFriend.m_strip.c_str());
 				
-				tmpXmlFriend.SetAttribute("key", tmpFriend.m_strkey.c_str());
-				LCLOG("			key %s", tmpFriend.m_strkey.c_str());
-				
 				tmpXmlFriend.SetAttribute("name", tmpFriend.m_strname.c_str());
 				LCLOG("			name %s", tmpFriend.m_strname.c_str());
 				
 				tmpXmlFriend.SetAttribute("port", tmpFriend.m_iport);
 				LCLOG("			port %d", tmpFriend.m_iport);
+				
+				tmpXmlFriend.SetAttribute("rkey", tmpFriend.m_strrkey.c_str());
+				LCLOG("			rkey %s", tmpFriend.m_strrkey.c_str());
+				
+				tmpXmlFriend.SetAttribute("skey", tmpFriend.m_strskey.c_str());
+				LCLOG("			skey %s", tmpFriend.m_strskey.c_str());
 				
 				
 				pFather->InsertEndChild(tmpXmlFriend);

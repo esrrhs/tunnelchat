@@ -1,4 +1,7 @@
 #include "libchat.h"
+#ifdef WIN32
+#include <conio.h>
+#endif
 
 using namespace std;
 
@@ -8,6 +11,7 @@ enum echatcmd
 	ecc_new,
 	ecc_info,
 	ecc_add,
+	ecc_online,
 };
 echatcmd g_cmd = ecc_none;
 std::string g_cmd_param1 = "";
@@ -35,6 +39,11 @@ int parsearg(int argc, char* argv[])
 	{
 		g_cmd = ecc_add;
 		goto PARAM1;
+	}
+	else if (!strcmp(cmd.c_str(), "online"))
+	{
+		g_cmd = ecc_online;
+		goto END;
 	}
 
 PARAM2:
@@ -69,11 +78,21 @@ Cmd List\n\
 		get my info, somebody can use it to add me friend\n\
 	add [info]\n\
 		add somebody to my friend by info\n\
+	online\n\
+		login chat with friend\n\
 ");
 }
 
 int new_guid()
 {
+	if (!g_CConfigLoader.GetConfig().m_STUser.m_stracc.empty())
+	{
+		printf("already have user %s, overwrite? y/n\n", g_CConfigLoader.GetConfig().m_STUser.m_stracc.c_str());
+		if (getchar() != 'y')
+		{
+			return 0;
+		}
+	}
 	lc_newuser(g_cmd_param1, g_cmd_param2);
 	return 0;
 }
@@ -109,13 +128,80 @@ void add()
 		printf("info error\n");
 	}
 	bool b = false;
+	std::string key = lc_make_friend_key(param[0]);
 	while (!b)
 	{
-		b = lc_send_add(param[1], atoi(param[2].c_str()), param[0]);
+		b = lc_rpc_add(param[1], atoi(param[2].c_str()), param[0], key);
 		b &= lc_is_friend(param[0]);
 		printf("try again...\n");
 	}
+	lc_set_friend_skey(param[0], key);
 	printf("add %s ok\n", lc_get_friend(param[0]).m_strname.c_str());
+}
+
+void on_recv_chat(const char * acc, const char * words)
+{
+	printf("[%s]: %s\n", acc, words);
+}
+
+void online()
+{
+	if (g_CConfigLoader.GetConfig().m_STUser.m_stracc.empty())
+	{
+		printf("plese create first, use [new] command\n");
+		return;
+	}
+
+	printf("input q to quit\n");
+	printf("input [name] [words] to chat, eg. alice how are you\n");
+
+	lc_set_chat_cb(on_recv_chat);
+
+	while (1)
+	{
+		// input
+		if (kbhit())
+		{
+			char buff[100];
+			gets(buff);
+			std::string cmd = buff;
+			if (cmd == "q")
+			{
+				printf("quit? y/n\n");
+				if (getchar() != 'y')
+				{
+					break;
+				}
+				continue;
+			}
+			
+			int pos = cmd.find(" ");
+			if (pos == -1)
+			{
+				printf("input [name] [words] to chat, eg. alice how are you\n");
+				continue;
+			}
+
+			std::string name = cmd.substr(0, pos);
+			std::string words = cmd.substr(pos + 1);
+			CConfigLoader::STConfig::STFriendList::STFriend f = lc_get_friend_by_name(name);
+			if (f.m_stracc.empty())
+			{
+				printf("there is no friend named %s\n", name.c_str());
+				continue;
+			}
+
+			if (!lc_rpc_chat(f.m_strip, f.m_iport, f.m_stracc, words))
+			{
+				printf("can not chat with friend %s\n", name.c_str());
+				continue;
+			}
+		}
+		else
+		{
+			lc_process();
+		}
+	}
 }
 
 int main(int argc, char* argv[])
@@ -144,6 +230,9 @@ int main(int argc, char* argv[])
 		break;
 	case ecc_add:
 		add();
+		break;
+	case ecc_online:
+		online();
 		break;
 	default:
 		useage();
