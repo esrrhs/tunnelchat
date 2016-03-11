@@ -141,7 +141,8 @@ void add()
 
 void on_recv_chat(const char * acc, const char * words)
 {
-	printf("[%s]: %s\n", acc, words);
+	CConfigLoader::STConfig::STFriendList::STFriend f = lc_get_friend(acc);
+	printf("[%s]: %s\n", f.m_strname.c_str(), words);
 }
 
 void online()
@@ -168,7 +169,7 @@ void online()
 			if (cmd == "q")
 			{
 				printf("quit? y/n\n");
-				if (getchar() != 'y')
+				if (getchar() == 'y')
 				{
 					break;
 				}

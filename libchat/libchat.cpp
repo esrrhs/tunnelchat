@@ -608,7 +608,7 @@ void lc_process()
 			CConfigLoader::STConfig::STFriendList::STFriend & tmp = g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend[i];
 			lc_send_udp(tmp.m_strip, tmp.m_iport, "hb");
 		}
-		g_sync_count = now;
+		g_hb_count = now;
 	}
 
 	// ÖØ·¢
