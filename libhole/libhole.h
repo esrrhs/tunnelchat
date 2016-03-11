@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
 #endif
 
 #include "udp.h"

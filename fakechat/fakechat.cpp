@@ -17,6 +17,39 @@ echatcmd g_cmd = ecc_none;
 std::string g_cmd_param1 = "";
 std::string g_cmd_param2 = "";
 
+#ifndef WIN32
+int kbhit()
+{
+	fd_set rfds;
+	struct timeval tv;
+	int retval;
+
+	/* Watch stdin (fd 0) to see when it has input. */
+	FD_ZERO(&rfds);
+	FD_SET(0, &rfds);
+	/* Wait up to five seconds. */
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+
+	retval = select(1, &rfds, NULL, NULL, &tv);
+	/* Don't rely on the value of tv now! */
+
+	if (retval == -1) 
+	{
+		return 0;
+	} 
+	else if (retval)
+	{
+		return 1;
+	}
+	/* FD_ISSET(0, &rfds) will be true. */
+	else
+	{
+		return 0;
+	}
+}
+#endif
+
 int parsearg(int argc, char* argv[])
 {
 	if (argc < 2)
@@ -163,8 +196,8 @@ void online()
 		// input
 		if (kbhit())
 		{
-			char buff[100];
-			gets(buff);
+			char buff[100] = {0};
+			fgets(buff, sizeof(buff), stdin);
 			std::string cmd = buff;
 			if (cmd == "q")
 			{
