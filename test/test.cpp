@@ -1,3 +1,4 @@
+#include "libhole.h"
 #include "libchat.h"
 
 #define MAX_NIC 3

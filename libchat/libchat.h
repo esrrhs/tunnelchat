@@ -1,6 +1,5 @@
 #pragma once
 
-#include "libhole.h"
 #include <stdint.h>
 #include "tinyxml.h"
 #include <vector>
@@ -67,7 +66,7 @@ void lc_newuser(std::string name, std::string pwd);
 bool lc_chekcp2p();
 
 // StunAddress4×ª»»
-std::string lc_get_stunaddr_ip(StunAddress4 addr);
+std::string lc_get_stunaddr_ip(const StunAddress4 & addr);
 
 // Ëæ»ú¶Ë¿Ú
 int lc_randport();

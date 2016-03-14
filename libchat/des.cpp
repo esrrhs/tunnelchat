@@ -1,3 +1,4 @@
+#include "libhole.h"
 #include "libchat.h"
 
 const uint64_t des_SPtrans[8][64]={

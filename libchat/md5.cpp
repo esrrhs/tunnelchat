@@ -1,3 +1,4 @@
+#include "libhole.h"
 #include "libchat.h"
 
 /* Constants for MD5_Transform routine. */

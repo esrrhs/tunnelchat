@@ -1,3 +1,4 @@
+#include "libhole.h"
 #include "libchat.h"
 #include <string.h>
 
@@ -368,7 +369,7 @@ void lc_newuser( std::string name, std::string pwd )
 	g_CConfigLoader.GetConfig().m_STUser.m_strname = name;
 }
 
-std::string lc_get_stunaddr_ip( StunAddress4 addr )
+std::string lc_get_stunaddr_ip( const StunAddress4 & addr )
 {
 	in_addr tmp;
 	*(int*)&tmp = htonl(addr.addr);

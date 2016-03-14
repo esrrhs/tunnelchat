@@ -1,3 +1,4 @@
+#include "libhole.h"
 #include "libchat.h"
 #ifdef WIN32
 #include <conio.h>
