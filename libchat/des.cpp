@@ -574,7 +574,7 @@ std::string lc_undes_str(const std::string & strkey, const std::string & s_text)
 {
     char stext[LC_DES_BUFF_LEN] = {0};
     memset(stext, 0, sizeof(stext));
-    for (int32_t i = 0; i < LC_DES_BUFF_LEN; i++)
+	for (int32_t i = 0; i < LC_DES_BUFF_LEN && ((2 * i + 2) < (int)s_text.size()); i++)
     {
         std::string tmp = s_text.substr(2 * i, 2);
         stext[i] = lc_atoi16(tmp);
