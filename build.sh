@@ -15,11 +15,11 @@ rm Makefile -rf
 cmake . $BUILD_FLAG
 make clean
 make -j5
-cd ..
 if [ $? -ne 0 ];then
 	echo "build libhole fail"
 	exit 1
 fi
+cd ..
 
 #libchat
 cd libchat
@@ -30,11 +30,11 @@ rm Makefile -rf
 cmake . $BUILD_FLAG
 make clean
 make -j5
-cd ..
 if [ $? -ne 0 ];then
 	echo "build libchat fail"
 	exit 1
 fi
+cd ..
 
 #test
 cd test
@@ -45,11 +45,11 @@ rm Makefile -rf
 cmake . $BUILD_FLAG
 make clean
 make -j5
-cd ..
 if [ $? -ne 0 ];then
 	echo "build test fail"
 	exit 1
 fi
+cd ..
 
 #fakechat
 cd fakechat
@@ -60,10 +60,10 @@ rm Makefile -rf
 cmake . $BUILD_FLAG
 make clean
 make -j5
-cd ..
 if [ $? -ne 0 ];then
 	echo "build fakechat fail"
 	exit 1
 fi
+cd ..
 
 echo "build ok"
