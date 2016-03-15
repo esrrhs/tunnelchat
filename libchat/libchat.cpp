@@ -556,8 +556,9 @@ bool lc_recv( const std::string & msgid, std::string & ret )
 			if (g_MsgData[i].isrecv)
 			{
 				ret = g_MsgData[i].ret;
+				return true;
 			}
-			return true;
+			return false;
 		}
 	}
 	return false;
@@ -567,7 +568,7 @@ std::string lc_rpc( const std::string & ip, int port, const std::string & cmd, c
 {
 	std::string msgid = lc_send(ip, port, cmd + " " + msg);
 	std::string ret;
-	while (lc_recv(msgid, ret))
+	while (!lc_recv(msgid, ret))
 	{
 		lc_process();
 	}
@@ -777,6 +778,19 @@ std::string lc_make_friend_key( const std::string & acc )
 	return key;
 }
 
+bool lc_is_sending(const std::string & msgid)
+{
+	for (int i = 0; i < (int)g_MsgData.size(); i++)
+	{
+		MsgData & tmp = g_MsgData[i];
+		if (tmp.msgid == msgid)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 bool lc_rpc_add( const std::string & ip, int port, const std::string & acc, const std::string & key )
 {
 	std::string msg = g_CConfigLoader.GetConfig().m_STUser.m_stracc;
@@ -790,6 +804,17 @@ bool lc_rpc_add( const std::string & ip, int port, const std::string & acc, cons
 		return false;
 	}
 	return true;
+}
+
+std::string lc_send_add(const std::string & ip, int port, const std::string & acc, const std::string & key)
+{
+	std::string msg = g_CConfigLoader.GetConfig().m_STUser.m_stracc;
+	msg += " " + g_CConfigLoader.GetConfig().m_STUser.m_strname;
+	msg += " " + key;
+	msg += " " + acc;
+	std::string emsg = lc_des("add", msg);
+	std::string msgid = lc_send(ip, port, "add " + emsg);
+	return msgid;
 }
 
 void lc_on_rpc_add( const std::string & ip, int port, const std::string & msgid, const std::string & msg )

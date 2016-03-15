@@ -16,6 +16,8 @@ struct ChatMsg
 typedef std::vector<ChatMsg> ChatMsgVec;
 typedef std::map<std::string, ChatMsgVec> ChatMsgMap;
 
+typedef std::map<std::string, std::string> AddList;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -35,9 +37,12 @@ private slots:
 private:
     void load_friend();
 
+    void timerEvent( QTimerEvent *event );
+
 private:
     Ui::MainWindow *ui;
     ChatMsgMap cmm;
+    AddList al;
 };
 
 #endif // MAINWINDOW_H

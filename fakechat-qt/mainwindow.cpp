@@ -5,6 +5,8 @@
 #include <QMessageBox>
 #include <QClipboard>
 
+extern QApplication * g_app;
+
 #ifdef _DEBUG
 #pragma comment(lib, "../bin/libchat_d.lib")
 #else
@@ -20,6 +22,7 @@ MainWindow::MainWindow(QWidget *parent) :
     if (!lc_ini())
     {
         QMessageBox::information(this, "error", "your network can not support p2p!");
+        lc_fini();
         exit(0);
     }
 
@@ -41,6 +44,8 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->lineEdit->hide();
 
         load_friend();
+
+        startTimer(1);
     }
 }
 
@@ -164,19 +169,58 @@ void MainWindow::on_actionAdd_triggered()
         return;
     }
 
-    bool b = false;
-    std::string key = lc_make_friend_key(param[0]);
-    while (!b)
-    {
-        b = lc_rpc_add(param[1], atoi(param[2].c_str()), param[0], key);
-        b &= lc_is_friend(param[0]);
-        ::Sleep(10);
-    }
-    lc_set_friend_skey(param[0], key);
-    QString msg = "add ";
-    msg += lc_get_friend(param[0]).m_strname.c_str();
-    msg += " ok";
-    QMessageBox::information(this, "info", msg);
+    al[info] = "";
+}
 
-    load_friend();
+void MainWindow::timerEvent( QTimerEvent *event )
+{
+    for (AddList::iterator it = al.begin(); it != al.end(); )
+    {
+        AddList::iterator tmp = it;
+        it++;
+        std::string info = tmp->first;
+        std::string msgid = tmp->second;
+        std::vector<std::string> param = lc_token(info, " ");
+
+        if (msgid == "")
+        {
+            std::string key = lc_make_friend_key(param[0]);
+
+            tmp->second = lc_send_add(param[1], atoi(param[2].c_str()), param[0], key);
+        }
+        else if (msgid == "ok")
+        {
+            if (lc_is_friend(param[0]))
+            {
+                al.erase(tmp);
+
+                load_friend();
+
+                QString msg = "add ";
+                msg += lc_get_friend(param[0]).m_strname.c_str();
+                msg += " ok";
+                QMessageBox::information(this, "info", msg);
+            }
+        }
+        else
+        {
+            if (!lc_is_sending(msgid))
+            {
+                tmp->second = "";
+            }
+            else
+            {
+                std::string ret;
+                if (lc_recv(msgid, ret))
+                {
+                    if (ret == "ok")
+                    {
+                        tmp->second = "ok";
+                    }
+                }
+            }
+        }
+    }
+
+    lc_process();
 }

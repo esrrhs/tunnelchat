@@ -120,9 +120,13 @@ void lc_set_friend_skey(const std::string & acc, const std::string & key);
 // 生成好友之间的key
 std::string lc_make_friend_key(const std::string & acc);
 
+// 是否在发送中
+bool lc_is_sending(const std::string & msgid);
+
 // 发送请求好友
 bool lc_rpc_add(const std::string & ip, int port, const std::string & acc, const std::string & key);
 void lc_on_rpc_add(const std::string & ip, int port, const std::string & msgid, const std::string & msg);
+std::string lc_send_add(const std::string & ip, int port, const std::string & acc, const std::string & key);
 
 // 聊天
 bool lc_rpc_chat(const std::string & ip, int port, const std::string & acc, const std::string & words);
