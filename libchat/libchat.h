@@ -131,6 +131,7 @@ std::string lc_send_add(const std::string & ip, int port, const std::string & ac
 // 聊天
 bool lc_rpc_chat(const std::string & ip, int port, const std::string & acc, const std::string & words);
 void lc_on_rpc_chat(const std::string & ip, int port, const std::string & msgid, const std::string & msg);
+std::string lc_send_chat(const std::string & ip, int port, const std::string & acc, const std::string & words);
 
 // 设置聊天回调
 void lc_set_chat_cb(lc_on_recv_chat cb);

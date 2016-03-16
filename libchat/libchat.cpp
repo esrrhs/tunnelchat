@@ -886,6 +886,27 @@ bool lc_rpc_chat( const std::string & ip, int port, const std::string & acc, con
 	return true;
 }
 
+std::string lc_send_chat(const std::string & ip, int port, const std::string & acc, const std::string & words)
+{
+	CConfigLoader::STConfig::STFriendList::STFriend f = lc_get_friend(acc);
+	if (f.m_stracc.empty())
+	{
+		LCERR("chat no friend %s %s", acc.c_str(), words.c_str());
+		assert(0);
+		return false;
+	}
+
+	std::string key = f.m_strskey;
+	std::string ewords = lc_des(key, words);
+
+	std::string msg = g_CConfigLoader.GetConfig().m_STUser.m_stracc;
+	msg += " " + ewords;
+	std::string emsg = lc_des("chat", msg);
+
+	std::string msgid = lc_send(ip, port, "chat " + emsg);
+	return msgid;
+}
+
 void lc_on_rpc_chat( const std::string & ip, int port, const std::string & msgid, const std::string & msg )
 {
 	std::string smsg = lc_undes("chat", msg);

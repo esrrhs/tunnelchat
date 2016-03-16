@@ -6,12 +6,56 @@
 #include <QClipboard>
 
 extern QApplication * g_app;
+extern MainWindow * g_w;
 
 #ifdef _DEBUG
 #pragma comment(lib, "../bin/libchat_d.lib")
 #else
 #pragma comment(lib, "../bin/libchat.lib")
 #endif
+
+void cb_on_recv_chat(const char * acc, const char * words)
+{
+    g_w->on_recv_chat(acc, words);
+}
+
+void MainWindow::on_recv_chat(QString acc, QString words)
+{
+    CConfigLoader::STConfig::STFriendList::STFriend f = lc_get_friend(acc.toStdString());
+    if (f.m_stracc.empty())
+    {
+        return;
+    }
+
+    if (acc == curtalk)
+    {
+        ChatMsg m;
+        m.isnew = false;
+        m.words = "[";
+        m.words += f.m_strname;
+        m.words += "]: ";
+        m.words += words.toStdString();
+        cmm[acc.toStdString()].push_back(m);
+
+        QString text = ui->chattextBrowser->toPlainText();
+        text += "\n";
+        text += m.words.c_str();
+        ui->chattextBrowser->clear();
+        ui->chattextBrowser->setText(text);
+    }
+    else
+    {
+        ChatMsg m;
+        m.isnew = true;
+        m.words = "[";
+        m.words += f.m_strname;
+        m.words += "]: ";
+        m.words += words.toStdString();
+        cmm[acc.toStdString()].push_back(m);
+
+        load_friend();
+    }
+}
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -47,6 +91,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
         startTimer(1);
     }
+
+    lc_set_chat_cb(cb_on_recv_chat);
 }
 
 MainWindow::~MainWindow()
@@ -109,7 +155,7 @@ void MainWindow::load_friend()
         CConfigLoader::STConfig::STFriendList::STFriend f = g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend[i];
 
         int newmsg = 0;
-        ChatMsgVec cmv = cmm[f.m_stracc];
+        ChatMsgVec & cmv = cmm[f.m_stracc];
         for (int j = 0; j < cmv.size(); j++)
         {
             if (cmv[j].isnew)
@@ -136,6 +182,18 @@ void MainWindow::load_friend()
                 c->setText(cstr);
                 ll->addWidget(c);
             }
+            else
+            {
+                QLabel * c = new QLabel(l);
+                c->setText("");
+                ll->addWidget(c);
+            }
+
+            QLabel * b = new QLabel(l);
+            b->setText(f.m_stracc.c_str());
+            b->setDisabled(true);
+            b->setVisible(false);
+            ll->addWidget(b);
 
             l->show();
 
@@ -174,6 +232,60 @@ void MainWindow::on_actionAdd_triggered()
 
 void MainWindow::timerEvent( QTimerEvent *event )
 {
+    for (SendList::iterator it = sl.begin(); it != sl.end(); )
+    {
+        SendList::iterator tmp = it;
+        it++;
+        std::string msgid = (*tmp).msgid;
+        std::string words = (*tmp).words;
+        std::string acc = (*tmp).acc;
+
+        if (!lc_is_sending(msgid))
+        {
+            words += "(send fail)";
+            sl.erase(tmp);
+
+            ChatMsg m;
+            m.isnew = false;
+            m.words = "me: ";
+            m.words += words;
+            cmm[acc].push_back(m);
+            if (curtalk.toStdString() == acc)
+            {
+                QString text = ui->chattextBrowser->toPlainText();
+                text += "\n";
+                text += m.words.c_str();
+                ui->chattextBrowser->clear();
+                ui->chattextBrowser->setText(text);
+            }
+        }
+        else
+        {
+            std::string ret;
+            if (lc_recv(msgid, ret))
+            {
+                if (ret == "ok")
+                {
+                    sl.erase(tmp);
+
+                    ChatMsg m;
+                    m.isnew = false;
+                    m.words = "me: ";
+                    m.words += words;
+                    cmm[acc].push_back(m);
+                    if (curtalk.toStdString() == acc)
+                    {
+                        QString text = ui->chattextBrowser->toPlainText();
+                        text += "\n";
+                        text += m.words.c_str();
+                        ui->chattextBrowser->clear();
+                        ui->chattextBrowser->setText(text);
+                    }
+                }
+            }
+        }
+    }
+
     for (AddList::iterator it = al.begin(); it != al.end(); )
     {
         AddList::iterator tmp = it;
@@ -223,4 +335,55 @@ void MainWindow::timerEvent( QTimerEvent *event )
     }
 
     lc_process();
+}
+
+void MainWindow::on_friendlistView_itemClicked(QListWidgetItem *item)
+{
+    QWidget * l = ui->friendlistView->itemWidget(item);
+
+    QList<QLabel*> lists = l->findChildren<QLabel*>();
+
+    QLabel * b = lists[1];
+    QLabel * c = lists[2];
+
+    curtalk = c->text();
+
+    ui->chattextBrowser->show();
+    ui->lineEdit->show();
+
+    QString text;
+    ChatMsgVec & v = cmm[curtalk.toStdString()];
+    for (int i = 0; i < v.size(); i++)
+    {
+        ChatMsg & m = v[i];
+        m.isnew = false;
+
+        text += m.words.c_str();
+        text += "\n";
+    }
+
+    ui->chattextBrowser->clear();
+    ui->chattextBrowser->setText(text);
+    b->setText("");
+}
+
+void MainWindow::on_lineEdit_returnPressed()
+{
+    CConfigLoader::STConfig::STFriendList::STFriend f = lc_get_friend(curtalk.toStdString());
+    if (f.m_stracc.empty())
+    {
+        return;
+    }
+
+    QString words = ui->lineEdit->text();
+
+    std::string msgid = lc_send_chat(f.m_strip, f.m_iport, f.m_stracc, words.toStdString());
+
+    SendChatMsg tmp;
+    tmp.acc = curtalk.toStdString();
+    tmp.msgid = msgid;
+    tmp.words = words.toStdString();
+    sl.push_back(tmp);
+
+    ui->lineEdit->setText("");
 }
