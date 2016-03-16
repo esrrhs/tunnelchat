@@ -293,17 +293,18 @@ void MainWindow::timerEvent( QTimerEvent *event )
         std::string info = tmp->first;
         std::string msgid = tmp->second;
         std::vector<std::string> param = lc_token(info, " ");
+        std::string key = lc_make_friend_key(param[0]);
 
         if (msgid == "")
         {
-            std::string key = lc_make_friend_key(param[0]);
-
             tmp->second = lc_send_add(param[1], atoi(param[2].c_str()), param[0], key);
         }
         else if (msgid == "ok")
         {
             if (lc_is_friend(param[0]))
             {
+                lc_set_friend_skey(param[0], key);
+
                 al.erase(tmp);
 
                 load_friend();
