@@ -561,7 +561,7 @@ bool lc_recv( const std::string & msgid, std::string & ret )
 			return false;
 		}
 	}
-	return false;
+	return true;
 }
 
 std::string lc_rpc( const std::string & ip, int port, const std::string & cmd, const std::string & msg )

@@ -161,12 +161,20 @@ void add()
 	{
 		printf("info error\n");
 	}
-	bool b = false;
+	bool b1 = false;
+	bool b2 = false;
 	std::string key = lc_make_friend_key(param[0]);
-	while (!b)
+	while (!b1 || !b2)
 	{
-		b = lc_rpc_add(param[1], atoi(param[2].c_str()), param[0], key);
-		b &= lc_is_friend(param[0]);
+		if (!b1)
+		{
+			b1 = lc_rpc_add(param[1], atoi(param[2].c_str()), param[0], key);
+		}
+		else
+		{
+			lc_process();
+		}
+		b2 = lc_is_friend(param[0]);
 		printf("try again...\n");
 	}
 	lc_set_friend_skey(param[0], key);
@@ -241,6 +249,13 @@ void online()
 
 int main(int argc, char* argv[])
 {
+	char buff[100];
+	sprintf(buff, "%s %s %d", "598823FC359BBB43E556CEE9408AAA3C",
+		"124.127.214.52",
+		54394);
+	std::string i = lc_des("fakechat", buff);
+	std::string i2 = lc_undes("fakechat", i);
+
 	if (!lc_ini())
 	{
 		goto EIXT;

@@ -98,7 +98,7 @@ void lc_resp(const std::string & ip, int port, const std::string & msgid, const 
 // 发送udp消息
 void lc_send_udp(const std::string & ip, int port, const std::string & msg);
 
-// 接收消息
+// 接收消息，返回true表示要么返回结果要么超时msgid不在
 bool lc_recv(const std::string & msgid, std::string & ret);
 
 // 处理消息
