@@ -42,6 +42,9 @@ void MainWindow::on_recv_chat(QString acc, QString words)
         text += m.words.c_str();
         ui->chattextBrowser->clear();
         ui->chattextBrowser->setText(text);
+        QTextCursor cursor =  ui->chattextBrowser->textCursor();
+        cursor.movePosition(QTextCursor::End);
+        ui->chattextBrowser->setTextCursor(cursor);
     }
     else
     {
@@ -259,6 +262,9 @@ void MainWindow::timerEvent( QTimerEvent *event )
                 text += m.words.c_str();
                 ui->chattextBrowser->clear();
                 ui->chattextBrowser->setText(text);
+                QTextCursor cursor =  ui->chattextBrowser->textCursor();
+                cursor.movePosition(QTextCursor::End);
+                ui->chattextBrowser->setTextCursor(cursor);
             }
         }
         else
@@ -282,6 +288,9 @@ void MainWindow::timerEvent( QTimerEvent *event )
                         text += m.words.c_str();
                         ui->chattextBrowser->clear();
                         ui->chattextBrowser->setText(text);
+                        QTextCursor cursor =  ui->chattextBrowser->textCursor();
+                        cursor.movePosition(QTextCursor::End);
+                        ui->chattextBrowser->setTextCursor(cursor);
                     }
                 }
             }
@@ -388,6 +397,10 @@ void MainWindow::on_friendlistView_itemClicked(QListWidgetItem *item)
 
     ui->chattextBrowser->clear();
     ui->chattextBrowser->setText(text);
+    QTextCursor cursor =  ui->chattextBrowser->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    ui->chattextBrowser->setTextCursor(cursor);
+
     b->setText("");
 
     CConfigLoader::STConfig::STFriendList::STFriend f = lc_get_friend(curtalk.toStdString());

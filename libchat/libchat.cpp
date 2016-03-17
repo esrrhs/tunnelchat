@@ -619,7 +619,7 @@ void lc_process()
 		for (int i = 0; i < (int)g_MsgData.size(); i++)
 		{
 			MsgData & tmp = g_MsgData[i];
-			if (!tmp.iscache)
+			if (!tmp.iscache && !tmp.isrecv)
 			{
 				lc_send_udp(tmp.ip, tmp.port, tmp.msg);
 			}
