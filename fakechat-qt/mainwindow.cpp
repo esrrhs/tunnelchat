@@ -366,6 +366,14 @@ void MainWindow::on_friendlistView_itemClicked(QListWidgetItem *item)
     ui->chattextBrowser->clear();
     ui->chattextBrowser->setText(text);
     b->setText("");
+
+    CConfigLoader::STConfig::STFriendList::STFriend f = lc_get_friend(curtalk.toStdString());
+    if (f.m_stracc.empty())
+    {
+        return;
+    }
+    QString title = f.m_strname.c_str();
+    setWindowTitle(title);
 }
 
 void MainWindow::on_lineEdit_returnPressed()
