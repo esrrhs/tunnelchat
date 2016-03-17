@@ -541,7 +541,7 @@ void lc_send_udp( const std::string & ip, int port, const std::string & msg )
 	assert(msg.size() < LC_MAX_MSG_LEN);
 	unsigned long uip = ntohl(inet_addr(ip.c_str()));
 	sendMessage(g_fd, msg.c_str(), msg.size(), uip, port, false);
-	if (msg != "hb")
+	if (msg != HB_MSG_CONTENT)
 	{
 		LCLOG("send %s %d : %s", ip.c_str(), port, msg.c_str());
 	}
@@ -608,7 +608,7 @@ void lc_process()
 		for (int i = 0; i < (int)g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend.size(); i++)
 		{
 			CConfigLoader::STConfig::STFriendList::STFriend & tmp = g_CConfigLoader.GetConfig().m_STFriendList.m_vecSTFriend[i];
-			lc_send_udp(tmp.m_strip, tmp.m_iport, "hb");
+			lc_send_udp(tmp.m_strip, tmp.m_iport, HB_MSG_CONTENT);
 		}
 		g_hb_count = now;
 	}
@@ -648,7 +648,7 @@ void lc_process()
 
 void lc_msg_process( const std::string & ip, int port, const std::string & msg )
 {
-	if (msg == "hb")
+	if (msg == HB_MSG_CONTENT)
 	{
 		return;
 	}

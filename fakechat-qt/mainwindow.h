@@ -60,6 +60,7 @@ private:
     AddList al;
     QString curtalk;
     SendList sl;
+    unsigned int lasthb;
 };
 
 #endif // MAINWINDOW_H

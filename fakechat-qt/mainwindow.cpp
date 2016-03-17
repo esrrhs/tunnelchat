@@ -144,6 +144,8 @@ void MainWindow::on_createpushButton_clicked()
     ui->lineEdit->hide();
 
     load_friend();
+
+    startTimer(1);
 }
 
 void MainWindow::load_friend()
@@ -298,11 +300,15 @@ void MainWindow::timerEvent( QTimerEvent *event )
         if (msgid == "")
         {
             tmp->second = lc_send_add(param[1], atoi(param[2].c_str()), param[0], key);
+            LCLOG("re send add %s", tmp->second.c_str());
         }
         else if (msgid == "ok")
         {
+            LCLOG("send add ok, wait in friend list");
             if (lc_is_friend(param[0]))
             {
+                LCLOG("send add ok, in friend list ok");
+
                 lc_set_friend_skey(param[0], key);
 
                 al.erase(tmp);
@@ -320,18 +326,35 @@ void MainWindow::timerEvent( QTimerEvent *event )
             if (!lc_is_sending(msgid))
             {
                 tmp->second = "";
+                LCLOG("send add timeout %s", msgid.c_str());
             }
             else
             {
+                LCLOG("send add, wait res %s", msgid.c_str());
                 std::string ret;
                 if (lc_recv(msgid, ret))
                 {
+                    LCLOG("send add, recv ret %s", msgid.c_str());
                     if (ret == "ok")
                     {
                         tmp->second = "ok";
+                        LCLOG("send add, recv ret ok %s", msgid.c_str());
                     }
                 }
             }
+        }
+    }
+
+    if (time(0) > lasthb)
+    {
+        lasthb = time(0);
+
+        for (AddList::iterator it = al.begin(); it != al.end(); it++)
+        {
+            std::string info = it->first;
+            std::vector<std::string> param = lc_token(info, " ");
+            lc_send_udp(param[1], atoi(param[2].c_str()), HB_MSG_CONTENT);
+            LCLOG("send hb %s %s", param[1].c_str(), param[2].c_str());
         }
     }
 

@@ -35,6 +35,9 @@
 // 消息包重发间隔时间
 #define LC_RESEND_TIME 1
 
+// 心跳内容
+#define HB_MSG_CONTENT "hb"
+
 typedef void(*lc_on_recv_chat)(const char * acc, const char * words);
 
 void lclog(const char * header, const char * file, const char * func, int pos, const char *fmt, ...);
