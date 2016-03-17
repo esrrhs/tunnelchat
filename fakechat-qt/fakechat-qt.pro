@@ -18,3 +18,13 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h
 
 FORMS    += mainwindow.ui
+
+RESOURCES += \
+    Images/appres.qrc
+
+DISTFILES += \
+    fakechat-qt.rc
+	
+RC_FILE = \
+  fakechat-qt.rc
+  

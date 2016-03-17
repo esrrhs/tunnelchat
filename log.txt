@@ -11,3 +11,4 @@
 2016.3.14：fix linux build，下一步加qt界面
 2016.3.15：加qt界面add
 2016.3.16：add bug
+2016.3.17：logo title
