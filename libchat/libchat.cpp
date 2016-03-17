@@ -1020,5 +1020,7 @@ void lc_recv_sync( const std::string & ip, int port, const std::string & msg )
 	f.m_strip = sip;
 	f.m_strname = sname;
 
+	lc_set_friend(f);
+
 	LCLOG("sync from %s %s %d", sname.c_str(), sip.c_str(), sport);
 }
