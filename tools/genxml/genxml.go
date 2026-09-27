@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/xml"
 	"fmt"
-	"mahonia"
 	"os"
 	"strconv"
 	"text/template"
@@ -162,8 +161,7 @@ func genlist(n string) []string {
 }
 
 func iconv(str string) string {
-	enc := mahonia.NewEncoder("gb2312")
-	return enc.ConvertString(str)
+	return str
 }
 
 func add_tab() string {
