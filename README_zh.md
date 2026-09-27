@@ -1,5 +1,7 @@
 # Tunnelchat (Go Edition)
 
+[English](README.md) | [中文](README_zh.md)
+
 **Tunnelchat** 是一款去中心化、基于 STUN 穿透与端到端加密的 P2P 命令行聊天工具。已完全重构为现代化 Go 内核，移除遗留的 Qt UI 与 C++ 编译依赖，提供跨平台且开箱即用的 Linux 命令行交互体验。
 
 ---
@@ -121,5 +123,6 @@ Share this info string with your friends to add you:
 ├── bin/                # 编译二进制输出目录
 ├── build.sh            # 快捷构建脚本
 ├── Makefile            # Makefile 构建规则
-└── readme.md           # 项目文档
+├── README.md           # 英文说明文档
+└── README_zh.md        # 中文说明文档
 ```
