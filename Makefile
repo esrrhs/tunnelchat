@@ -12,7 +12,7 @@ test:
 	go test -v ./...
 
 clean:
-	rm -rf bin/tunnelchat tunnelchat.xml fakechat.xml
+	rm -rf bin/tunnelchat tunnelchat.xml tunnelchat.json fakechat.xml
 
 run: build
 	./$(BINARY)

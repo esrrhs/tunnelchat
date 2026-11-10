@@ -18,7 +18,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.26'
           check-latest: true
 
       - name: Verify build
@@ -32,6 +32,6 @@ jobs:
       - name: Test CLI commands
         run: |
           ./bin/tunnelchat help
-          ./bin/tunnelchat -c test_user.xml new Alice 123456
-          ./bin/tunnelchat -c test_user.xml info
-          rm -f test_user.xml
+          ./bin/tunnelchat -c test_user.json new Alice 123456
+          ./bin/tunnelchat -c test_user.json --no-stun info
+          rm -f test_user.json

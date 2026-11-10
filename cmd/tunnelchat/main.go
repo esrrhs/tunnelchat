@@ -6,60 +6,97 @@ import (
 	"os"
 
 	"tunnelchat/pkg/cli"
-	"tunnelchat/pkg/config"
+	"tunnelchat/pkg/core"
 )
 
+type stringList []string
+
+func (s *stringList) String() string { return fmt.Sprint(*s) }
+func (s *stringList) Set(v string) error {
+	*s = append(*s, v)
+	return nil
+}
+
 func main() {
-	var configPath string
-	flag.StringVar(&configPath, "c", "tunnelchat.xml", "Path to configuration file")
-	flag.Parse()
+	os.Exit(run(os.Args[1:]))
+}
 
-	args := flag.Args()
-	if len(args) == 0 {
+func run(args []string) int {
+	fs := flag.NewFlagSet("tunnelchat", flag.ContinueOnError)
+	fs.SetOutput(os.Stderr)
+	var (
+		configPath  string
+		dhtEnable   bool
+		noDHT       bool
+		noSTUN      bool
+		relayServer string
+		relayToken  string
+		listen      string
+		maxSess     int
+		boot        stringList
+	)
+	fs.StringVar(&configPath, "c", "tunnelchat.json", "Path to configuration file")
+	fs.BoolVar(&dhtEnable, "dht", false, "Legacy flag; DHT is already on by default for 'online'")
+	fs.BoolVar(&noDHT, "no-dht", false, "Disable DHT discovery and public swarm announce")
+	fs.Var(&boot, "dht-bootstrap", "Override DHT bootstrap host:port (repeatable)")
+	fs.BoolVar(&noSTUN, "no-stun", false, "Do not query STUN servers")
+	fs.StringVar(&relayServer, "relay-server", "", "Optional relay host:port")
+	fs.StringVar(&relayToken, "relay-token", "", "Relay access token")
+	fs.StringVar(&listen, "listen", "127.0.0.1:0", "Listen address for 'relay' command")
+	fs.IntVar(&maxSess, "max-sessions", 32, "Max relay allocations")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	rest := fs.Args()
+	if len(rest) == 0 {
 		cli.PrintUsage()
-		os.Exit(0)
+		return 0
 	}
-
-	cfg, err := config.LoadConfig(configPath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading configuration (%s): %v\n", configPath, err)
-		os.Exit(1)
+	opts := core.Options{
+		DHTDisabled:          noDHT,
+		DHTEnabled:           dhtEnable && !noDHT,
+		UseDefaultBootstraps: false, // set per-command; only online uses defaults
+		DHTBootstrap:         append([]string(nil), boot...),
+		DisableSTUN:          noSTUN,
+		RelayServer:          relayServer,
+		RelayToken:           relayToken,
 	}
-
-	app, err := cli.NewApp(cfg, configPath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error initializing application: %v\n", err)
-		os.Exit(1)
-	}
-
-	cmd := args[0]
+	_ = dhtEnable
+	app := cli.NewApp(configPath, opts)
+	cmd := rest[0]
 	switch cmd {
 	case "new":
-		if len(args) < 3 {
-			fmt.Println("Usage: tunnelchat new <name> <password>")
-			os.Exit(1)
+		if len(rest) < 2 {
+			fmt.Println("Usage: tunnelchat new <name> [ignored-password]")
+			return 1
 		}
-		app.CmdNew(args[1], args[2])
-
+		pwd := ""
+		if len(rest) >= 3 {
+			pwd = rest[2]
+		}
+		return app.CmdNew(rest[1], pwd)
 	case "info":
-		app.CmdInfo()
-
+		return app.CmdInfo()
 	case "add":
-		if len(args) < 2 {
-			fmt.Println("Usage: tunnelchat add <info>")
-			os.Exit(1)
+		if len(rest) < 2 {
+			fmt.Println("Usage: tunnelchat add <invite>")
+			return 1
 		}
-		app.CmdAdd(args[1])
-
+		return app.CmdAdd(rest[1])
 	case "online":
-		app.CmdOnline()
-
+		if !noDHT {
+			opts.UseDefaultBootstraps = len(boot) == 0
+			app = cli.NewApp(configPath, opts)
+		}
+		return app.CmdOnline()
+	case "relay":
+		return cli.CmdRelay(listen, relayToken, maxSess)
 	case "help", "-h", "--help":
 		cli.PrintUsage()
-
+		return 0
 	default:
 		fmt.Printf("Unknown command: %q\n\n", cmd)
 		cli.PrintUsage()
-		os.Exit(1)
+		return 1
 	}
 }
