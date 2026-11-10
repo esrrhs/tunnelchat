@@ -1,128 +1,143 @@
-# Tunnelchat (Go Edition)
+# Tunnelchat (v2)
 
 [English](README.md) | [中文](README_zh.md)
 
-**Tunnelchat** is a decentralized, peer-to-peer (P2P) command-line chat application powered by STUN NAT traversal and end-to-end encryption. Built with a modern pure Go core, it operates without legacy GUI frameworks or external C++ dependencies, offering a clean, lightweight, out-of-the-box interactive terminal chat experience on Linux.
+**Tunnelchat v2** is a command-line peer-to-peer chat tool. Peers pin each other's long-term identities, discover optional endpoint hints, probe candidates in both directions, and then run a **Noise_IK** handshake (X25519 + ChaCha20-Poly1305 + SHA-256, with Ed25519 identity binding). There is no silent fallback to the legacy DES/MD5 protocol.
+
+This is a local, still-evolving implementation. It has been tested with **loopback and a userspace NAT/STUN/DHT/relay emulator**, not on real dual-NAT or CGNAT paths. Do not treat successful unit tests as a guarantee of traversal on the public Internet.
 
 ---
 
-## Features
+## What v2 changes
 
-* **Serverless Architecture**: Pure P2P topology; all communications are directly peer-to-peer without central relay servers.
-* **STUN NAT Traversal**: Pure Go RFC 3489 / RFC 5389 implementation for public IP mapping and NAT type discovery.
-* **Automatic LAN / Offline Fallback**: Intelligently falls back to local network IPs when STUN servers are unreachable, ensuring smooth operation across LAN and WAN environments.
-* **End-to-End Encryption**: End-to-end encrypted payload transmission using DES-ECB + MD5 key derivation with mutual negotiation per peer.
-* **Heartbeat & Hole Punching**: Periodic UDP heartbeats keep NAT mappings open and sustain connectivity.
-* **Dynamic Status Synchronization**: Automatically tracks and synchronizes friend IP and port changes.
-* **Interactive CLI**: Rich terminal commands for viewing friends, real-time messaging, status inspection, and connection token exchange.
-
----
-
-## Quick Start
-
-### 1. Build from Source
-
-Requires Go 1.20 or later:
-
-```bash
-# Using Makefile
-make build
-
-# Or using the build script
-./build.sh
-
-# Run unit tests
-make test
-```
-
-The compiled binary will be placed at `bin/tunnelchat`.
+* **Identity:** a random 32-byte seed derives Ed25519 (signing / pinning) and X25519 (Noise static). Passwords are not used as key material.
+* **Sessions:** `Noise_IK_25519_ChaChaPoly_SHA256` with a fixed prologue (`tunnelchat-v2-noise-ik`). Transport nonces use a sliding replay window. Tampered or replayed packets are dropped. DHT-advertised addresses are untrusted until a pinned probe and handshake succeed.
+* **Shared UDP socket:** STUN, optional DHT, probes, sessions, and optional relay framing share one socket so the **STUN mapped port is the chat port**. Mapped addresses are refreshed periodically; a saved IP is not treated as permanent.
+* **Candidates:** local IPv4/IPv6 host addresses plus STUN server-reflexive addresses. Invites are out-of-band and may include LAN hints. **Public DHT records never carry raw private addresses**; optional BEP 44-style hints are encrypted and then stripped to public endpoints only.
+* **DHT:** `online` **enables Mainline DHT discovery by default** (documented public bootstraps; override or disable below). **DHT is discovery only**, not a chat relay and not a hole-punch coordinator. Chat payloads stay end-to-end encrypted (Noise/AEAD). Going online advertises your public IP to bootstrap and DHT nodes. A well-known v2 swarm plus **Ed25519-signed presence** (name bound to the key) lets you list other currently-online users as *strangers* — they are **never auto-added** to the trusted friend list. Raw DHT IPs are not trusted as identities. Unsigned, stale, or forged presence is ignored. Private addresses are not published in plaintext public records.
+* **Relay:** optional, operator-run UDP forwarder. Payloads stay opaque. Access is token-MAC'd, allocations are bounded and idle-expired. Default listen address is loopback. This is not a required central server.
 
 ---
 
-### 2. Command Reference
+## Incompatibility and migration
 
-```bash
-tunnelchat <command> [arguments]
-```
-
-| Command | Arguments | Description |
-| :--- | :--- | :--- |
-| `new` | `<name> <password>` | Create or reset a user account |
-| `info` | None | Export encrypted connection string to share with friends |
-| `add` | `<info_string>` | Add a friend using their connection string and initiate handshake |
-| `online` | None | Launch interactive CLI chat mode |
+v2 **cannot talk to v1** (DES-ECB / MD5 / `tunnelchat.xml`) clients. Existing v1 XML files are **detected and left untouched**. `tunnelchat new` refuses to overwrite an existing v2 file and refuses `.xml` paths. Create a new identity in a new JSON path (default `tunnelchat.json`). There is no automatic import of old accounts or friend keys.
 
 ---
 
-### 3. Usage Walkthrough
+## Build
 
-#### Step 1: Create Accounts
+Requires Go 1.26 or later:
 
-User Alice:
 ```bash
-./bin/tunnelchat new Alice 123456
+make build     # bin/tunnelchat
+make test      # unit + local integration tests
 ```
 
-User Bob:
-```bash
-./bin/tunnelchat new Bob 654321
-```
-
-#### Step 2: Share Connection Info and Add Friend
-
-Alice retrieves her connection string:
-```bash
-./bin/tunnelchat info
-```
-Output:
-```
-My Information:
-  Name: Alice
-  Account: 4B3C18DE30FDE73A393D43E085B88350
-  Address: 162.62.119.173:53714
-
-Share this info string with your friends to add you:
-98F8E4DED6E5EEF52D81640FCA8135EF3960FEF370972992...
-```
-
-Bob adds Alice:
-```bash
-./bin/tunnelchat add 98F8E4DED6E5EEF52D81640FCA8135EF3960FEF370972992...
-```
-
-Similarly, Alice adds Bob's connection string to establish mutual key negotiation and authorization.
-
-#### Step 3: Start Interactive Chat
-
-Launch interactive chat mode:
-```bash
-./bin/tunnelchat online
-```
-
-Inside the interactive terminal:
-* **Send message**: Type `<FriendName> <Message>` (e.g., `Bob Hi Bob, how are you?`)
-* **List friends**: Type `/friends` or `/list`
-* **Show user info**: Type `/info`
-* **Add friend online**: Type `/add <info_string>`
-* **Exit**: Type `q` or `quit`
+Tests use in-process fake STUN/DHT/relay and a userspace NAT. They do **not** announce to the public Mainline DHT.
 
 ---
 
-## Project Structure
+## Usage
+
+```bash
+# Create identities (the optional leftover password argument is ignored)
+./bin/tunnelchat -c alice.json new Alice
+./bin/tunnelchat -c bob.json new Bob
+
+# Print a signed invite (may briefly bind a socket and query STUN; no DHT announce)
+./bin/tunnelchat -c alice.json info
+
+# Pin the other identity (both sides should add each other)
+./bin/tunnelchat -c bob.json add 'TC2INV1....'
+
+# Online at the same time (no offline inbox)
+./bin/tunnelchat -c alice.json online
+./bin/tunnelchat -c bob.json online
+```
+
+Inside `online`: `<Name> <message>`, `/friends`, `/peers` (or `/who`), `/connect <fingerprint>`, `/addpeer <fingerprint>`, `/info`, `/add <invite>`, `q`.
+
+### DHT discovery (on by default for `online`)
+
+```bash
+# Default: contact public Mainline bootstraps and join the v2 public swarm
+./bin/tunnelchat -c alice.json online
+
+# Disable DHT entirely
+./bin/tunnelchat -c alice.json --no-dht online
+
+# Or in the JSON config: { "dht": { "disabled": true } }
+
+# Override bootstraps (e.g. a local node); this replaces the default list
+./bin/tunnelchat -c alice.json --dht-bootstrap 127.0.0.1:6881 online
+```
+
+Default bootstrap routers (documented, used only when no override is set):
+
+* `router.bittorrent.com:6881`
+* `dht.transmissionbt.com:6881`
+* `router.utorrent.com:6881`
+* `dht.libtorrent.org:25401`
+
+`info` still does **not** announce to the DHT. Tests never apply this default list, so unit tests do not contact the public network.
+
+#### Finding strangers
+
+While both people are `online` with DHT on, `/peers` or `/who` lists discovered users: display name (signed together with their long-term Ed25519 key) and fingerprint. Anyone can choose any display name; **compare fingerprints** before trusting a name. Presence is short-lived (about five minutes) and may be missing or polluted.
+
+* `/connect <fingerprint>` starts the normal encrypted handshake. It does **not** add them as a trusted friend.
+* `/addpeer <fingerprint>` pins them to your friend list (explicit).
+* Invites (`/add TC2INV1...`) still work for out-of-band introductions.
+
+This is not anonymous. Other DHT users can see that a tunnelchat client is online at your public IP.
+
+### Optional relay
+
+```bash
+./bin/tunnelchat relay --listen 127.0.0.1:9000 --token 'long-random-secret'
+./bin/tunnelchat -c alice.json --relay-server 127.0.0.1:9000 --relay-token 'long-random-secret' online
+```
+
+The relay operator can see IP addresses and timing, not message plaintext. Do not run an unattended public relay unless you intend to.
+
+### Flags
+
+| Flag | Meaning |
+| :--- | :--- |
+| `-c path` | JSON config (mode 0600). Default `tunnelchat.json`. |
+| `--no-dht` | Disable DHT discovery and public swarm announce. |
+| `--dht-bootstrap host:port` | Repeatable. Replaces the default public bootstrap list. |
+| `--no-stun` | Skip STUN (LAN or tests). |
+| `--relay-server`, `--relay-token` | Opt-in relay fallback. |
+
+---
+
+## Limitations (read these)
+
+* **NAT / “sub-LAN” traversal is not guaranteed.** Same subnet works when LAN candidates or working hairpin exist. Different subnets need routing and open UDP. Guest isolation, double NAT, CGNAT, and symmetric NAT often fail without a relay. Simultaneous probing is implemented; there is **no port prediction**. Real dual-NAT/CGNAT was **not** tested in this tree.
+* **Going `online` with DHT on advertises your public IP** to bootstrap/DHT nodes and to other users who look up the public swarm. This is not an anonymity tool. Chat content stays end-to-end encrypted; metadata and IPs do not.
+* **Stranger names are not unique.** The signature binds a name to a key, but anyone can label themselves "Alice". Compare fingerprints.
+* **DHT records expire, can be missing, or can be polluted.** Presence TTL is short. DHT still does not punch NAT; hard NAT may still need a relay.
+* **No offline delivery.** Both peers must be `online` at the same time.
+* **IPv6:** host candidates are gathered; the primary listener is IPv4 (`udp4`). IPv6-only receive is incomplete.
+* **Invite privacy:** an invite contains identity keys, a rendezvous secret, and optional LAN endpoints. Treat it like a capability. Do not paste it into public DHT records or public forums.
+* **Crypto:** Noise_IK + Ed25519 pinning replaces DES/MD5. Keep the JSON seed file private (`0600`).
+* **DHT storage** (including signed mutable items) is best-effort, size-limited, and short-lived. Not all Mainline nodes implement BEP 44.
+
+---
+
+## Project layout
 
 ```
-.
-├── cmd/
-│   └── tunnelchat/     # CLI entry point
-├── pkg/
-│   ├── cli/            # Interactive terminal UI and CLI logic
-│   ├── config/         # XML configuration and friend/account management
-│   ├── core/           # P2P engine (UDP transport, RPC, heartbeats, dispatch)
-│   ├── crypto/         # Cryptographic primitives (DES, MD5, GUID)
-│   └── stun/           # Pure Go STUN client and NAT discovery
-├── bin/                # Compiled binary output directory
-├── build.sh            # Build script
-├── Makefile            # Makefile targets
-├── README.md           # English documentation (main)
-└── README_zh.md        # Chinese documentation
+cmd/tunnelchat/     CLI entry
+pkg/identity/       Seed, Ed25519, X25519
+pkg/session/        Noise_IK sessions, replay window
+pkg/stun/           Shared-socket STUN client + test server
+pkg/dht/            Local/Mainline-compatible BEP 5 + signed mutable items
+pkg/probe/          Signed bidirectional probes
+pkg/relay/          Optional opaque UDP relay
+pkg/candidate/      Host / srflx classification
+pkg/core/           Engine
+pkg/netsim/         Userspace NAT for tests
 ```
